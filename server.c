@@ -26,8 +26,8 @@ void start_server(int port)
 
 	int server_port = port;
 	int socketfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	struct addrinfo *addr_info;
-	struct addrinfo hints;
+	typedef struct addrinfo *addr_info;
+	typedef struct addrinfo hints;
 		
 	if(socketfd < 0)
 	{
@@ -77,4 +77,54 @@ void start_server(int port)
     // we then want to start a timer for this pthread
 	//thread
 	}
+    
+}
+
+//set up a separate datagram socket for recieving packets after the TCP connection has been made.
+#define BUFLEN 512 //define arbitrary buffer length
+#define NPACK 10 //temp initialization of packets to be recieved.
+#define PORT 1111 //temp port to be used for datagram.
+
+//method to do error check
+void checkErr(char *e);
+{
+    perror(e);
+    exit(1);
+}
+
+//UDP connection
+void udp_server(){
+    
+    
+    struct sockaddr_in serverDgram;
+    struct sockaddr_in clientDgram;
+    int s;
+    int i;
+    int slen = sizeof(clientDgram); //size of data sent from client
+    char buf[BUFLEN]; //set buffer length
+    
+    if ((s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP))==-1)
+      checkErr("Socket Error");
+    
+    memset((char *) &serverDgram, 0, sizeof(serverDgram)); //initialize datagram struct, fill with binary zeros
+    
+    serverDgram.sin_family = AF_INET; //use internet addresses
+    serverDgram.sin_port = htons(PORT); //used defined portnumber. with htons() which ensures byte order.
+    serverDgram.sin_addr.s_addr = htonl(INADDR_ANY); //accept packets from any IP interface
+    
+   //bind socket s to address of serverDgram
+    if (bind(s, &serverDgram, sizeof(serverDgram))==-1)
+            checkErr("Binding Error");
+    
+    
+    for (i=0; i<NPACK; i++) { //for every packet sent
+        if (recvfrom(s, buf, BUFLEN, 0, &clientDgram, &slen)==-1) //recieve packet from s and store into buf, max size of BUFLEN. store info of the client into clientDgram.
+             checkErr("recvfrom() error");
+        //display info about the client and data in the packets with inet_ntoa. takes a stuct in_addr and converts it to a string.
+        printf("Received packet from %s:%d\nData: %s\n\n",
+        inet_ntoa(clientDgram.sin_addr), ntohs(clientDgram.sin_port), buf);
+        }
+
+    close(s);
+
 }
