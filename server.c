@@ -6,6 +6,8 @@
 #include <sys/socket.h>
 #include <signal.h>
 #include <time.h>
+#include <cv.h>
+#include <highgui.h>
 
 #define ALLOWED_CONNECTIONS 5
 
@@ -81,50 +83,92 @@ void start_server(int port)
 }
 
 //set up a separate datagram socket for recieving packets after the TCP connection has been made.
-#define BUFLEN 512 //define arbitrary buffer length
-#define NPACK 10 //temp initialization of packets to be recieved.
-#define PORT 1111 //temp port to be used for datagram.
-
-//method to do error check
-void checkErr(char *e);
-{
-    perror(e);
-    exit(1);
-}
+#define PORT 1111 //temp port to be used for datagram. GET FROM TCP.
+#define PACK // pointer to the data packets we want to sent GET FROM DECODED VIDEO
+#define LEN //number of bytes we want to send. GET FROM DECODED VIDEO
 
 //UDP connection
 void udp_server(){
     
+    int sockfd;
+    struct addrinfo udpHints;
+    struct addrinfo *serverInfo;
+    struct addrinfo *p;
+    int rv;
+    int numaBytes;
     
-    struct sockaddr_in serverDgram;
-    struct sockaddr_in clientDgram;
-    int s;
-    int i;
-    int slen = sizeof(clientDgram); //size of data sent from client
-    char buf[BUFLEN]; //set buffer length
-    
-    if ((s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP))==-1)
-      checkErr("Socket Error");
-    
-    memset((char *) &serverDgram, 0, sizeof(serverDgram)); //initialize datagram struct, fill with binary zeros
-    
-    serverDgram.sin_family = AF_INET; //use internet addresses
-    serverDgram.sin_port = htons(PORT); //used defined portnumber. with htons() which ensures byte order.
-    serverDgram.sin_addr.s_addr = htonl(INADDR_ANY); //accept packets from any IP interface
-    
-   //bind socket s to address of serverDgram
-    if (bind(s, &serverDgram, sizeof(serverDgram))==-1)
-            checkErr("Binding Error");
-    
-    
-    for (i=0; i<NPACK; i++) { //for every packet sent
-        if (recvfrom(s, buf, BUFLEN, 0, &clientDgram, &slen)==-1) //recieve packet from s and store into buf, max size of BUFLEN. store info of the client into clientDgram.
-             checkErr("recvfrom() error");
-        //display info about the client and data in the packets with inet_ntoa. takes a stuct in_addr and converts it to a string.
-        printf("Received packet from %s:%d\nData: %s\n\n",
-        inet_ntoa(clientDgram.sin_addr), ntohs(clientDgram.sin_port), buf);
+    memset (&udpHints,0,sizeof udpHints);//initialize datagram struct, fill with binary zeros
+    udpHints.ai_family = AF_UNSPEC;
+    udpHints.ai_socktype = SOCK_DGRAM;
+
+    // loop through all the results and make a socket
+    // looks through serverinfo and looks for a port
+    for(p = serverinfo; p != NULL; p = p->ai_next) {
+        if ((sockfd = socket(p->ai_family, p->ai_socktype,
+                             p->ai_protocol)) == -1) {
+            perror("talker: socket");
+            continue;
         }
-
-    close(s);
-
+        
+        break;
+    }
+    //check if we found a open socket
+    if (p == NULL) {
+        fprintf(stderr, "talker: failed to bind socket\n");
+        return 2;
+    }
+    
+    //store datagram packets and send if exist
+    if ((numBytes = sendto(sockfd, *PACK, LEN, 0, p->ai_addr, p->ai_addrlen)) == -1) {
+        perror("talker: sendto");
+        exit(1);
+    }
+    
+    //free the socket used
+    freeaddrinfo(serverinfo);
+    
+    close(sockfd);
 }
+
+//should return encoded as jpeg packets to be sent through UDP
+void load_video()
+    CvCapture *video;
+    IplImage *image;
+    CvMat *thumb;
+    CvMat *encoded;
+    
+    // Open the video file.
+    //get file name from TCP client
+    video = cvCaptureFromFile(filename);
+
+        if (!video) {
+    // The file doesn't exist or can't be captured as a video file.
+}
+
+    // Obtain the next frame from the video file
+        image = cvQueryFrame(video);
+            if (!image) {
+    // Next frame doesn't exist or can't be obtained.
+}
+
+    // Position the video at a specific frame number position
+            cvSetCaptureProperty(video, CV_CAP_PROP_POS_FRAMES, next_frame);
+
+    // Convert the frame to a smaller size (WIDTH x HEIGHT)
+            thumb = cvCreateMat(WIDTH, HEIGHT, CV_8UC3);
+            cvResize(img, thumb, CV_INTER_AREA);
+
+    // Encode the frame in JPEG format with JPEG quality 30%.
+        const static int encodeParams[] = { CV_IMWRITE_JPEG_QUALITY, 30 };
+        encoded = cvEncodeImage(".jpeg", thumb, encodeParams);
+
+// After the call above, the encoded data is in encoded->data.ptr and has a length of encoded->cols bytes.
+
+// Close the video file
+cvReleaseCapture(&video);
+
+
+
+
+
+
