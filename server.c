@@ -94,44 +94,34 @@ void udp_server(){
     struct addrinfo udpHints;
     struct addrinfo *serverInfo;
     struct addrinfo *p;
-    int rv;
-    int numaBytes;
     
-    memset (&udpHints,0,sizeof udpHints);//initialize datagram struct, fill with binary zeros
+    memset (&udpHints,0,sizeof udpHints);//initialize datagram struct
     udpHints.ai_family = AF_UNSPEC;
     udpHints.ai_socktype = SOCK_DGRAM;
+    
+    //gets all addr info and set it to serverinfo
+    getaddrinfo("hostname", PORT, &udpHints, &serverInfo);
 
     // loop through all the results and make a socket
-    // looks through serverinfo and looks for a port
-    for(p = serverinfo; p != NULL; p = p->ai_next) {
-        if ((sockfd = socket(p->ai_family, p->ai_socktype,
-                             p->ai_protocol)) == -1) {
-            perror("talker: socket");
-            continue;
-        }
-        
-        break;
+    for(p = serverInfo; p != NULL; p = p->ai_next) {
+        sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
     }
-    //check if we found a open socket
-    if (p == NULL) {
-        fprintf(stderr, "talker: failed to bind socket\n");
-        return 2;
-    }
+   
     
     //store datagram packets and send if exist
-    if ((numBytes = sendto(sockfd, *PACK, LEN, 0, p->ai_addr, p->ai_addrlen)) == -1) {
-        perror("talker: sendto");
-        exit(1);
-    }
+    sendto(sockfd, *PACK, LEN, 0, p->ai_addr, p->ai_addrlen);
     
     //free the socket used
-    freeaddrinfo(serverinfo);
+    freeaddrinfo(serverInfo);
     
     close(sockfd);
 }
+/*
+
+
 
 //should return encoded as jpeg packets to be sent through UDP
-void load_video()
+void load_video(){
     CvCapture *video;
     IplImage *image;
     CvMat *thumb;
@@ -166,9 +156,45 @@ void load_video()
 
 // Close the video file
 cvReleaseCapture(&video);
+}
+void timer(){
+    // This struct is created to save information that will be needed by the timer,
+    // such as socket file descriptors, frame numbers and video captures.
+    struct send_frame_data {
+        int socket_fd;
+        // other fields
+    };
+    // This function will be called when the timer ticks
+    void send_frame(union sigval sv_data) {
+        struct send_frame_data *data = (struct send_frame_data *) sv_data.sival_ptr;
+        // You may retrieve information from the caller using data->field_name
+        // ...
+    }// The following snippet is used to create and start a new timer that runs
+    // every 40 ms.
+    struct send_frame_data data; // Set fields as necessary
+    struct sigevent play_event;
+    timer_t play_timer;
+    struct itimerspec play_interval;
+    memset(&play_event, 0, sizeof(play_event));
+    play_event.sigev_notify = SIGEV_THREAD;
+    play_event.sigev_value.sival_ptr = &play_data;
+    play_event.sigev_notify_function = send_frame;
+    play_interval.it_interval.tv_sec = 0;
+    play_interval.it_interval.tv_nsec = 40 * 1000000; // 40 ms in ns
+    play_interval.it_value.tv_sec = 0;
+    play_interval.it_value.tv_nsec = 1; // can't be zero
+    timer_create(CLOCK_REALTIME, &play_event, &play_timer);
+    timer_settime(play_timer, 0, &play_interval, NULL);
+    // The following snippet is used to stop a currently running timer. The current
+    // task is not interrupted, only future tasks are stopped.
+    play_interval.it_interval.tv_sec = 0;
+    play_interval.it_interval.tv_nsec = 0;
+    play_interval.it_value.tv_sec = 0;
+    play_interval.it_value.tv_nsec = 0;
+    timer_settime(play_timer, 0, &play_interval, NULL);
+    // The following line is used to delete a timer.
+    timer_delete(play_timer);
+}
 
-
-
-
-
+*/
 
