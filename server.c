@@ -3,19 +3,78 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <sys/time.h>
+#include <sys/types.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
 #include <signal.h>
 #include <time.h>
-#include <cv.h>
-#include <highgui.h>
+#include <string.h>
+#include <stdbool.h>
 
 #define ALLOWED_CONNECTIONS 5
+typedef enum bool {
+false=0;
+true=1;
+} bool;
 
 void *serve_client(void *ptr) {
   // Converts ptr back to integer.
-//  int client_fd = (int) (intptr_t) ptr;
+  int client_fd = (int) (intptr_t) ptr;
+  
+  //loop until we want to close the program
+  while(TRUE)
+  {
+	//if data in socket
+	
+	char data[4096];
+	char *parsed_data[4096];
+	parsed_data[0] = malloc(1024);
+		
+	bool done = false;
+	int line_counter = 0;
+	int char_counter = 0;
+	while(!done)
+	{
+		int read_size = read(client_fd, data, 4096);
+		if(read_size < 0)
+		{
+			perror ("read failed");
+		}
+		//parse data now
+		
+		if(read_size < 4096)
+		{
+			done = true; // nothing else to read this time
+		}
+		
+		for(int j = 0; j < read_size; j++)
+		{
+			char data_char = data[j];
+			if(strpbrk(data_char, KEY) != null)
+			{
+				line_counter++;
+				parsed_data[line_counter] = malloc(1024);
+			}
+			else
+			{
+				parsed_data[line_counter][char_counter++] = data_char;
+			}
+		}
+	}
+	
+	//at this point, we have our parsed data
+	//now, we need to analyze it
+	
+	//deal with it
+  }
+  
   // ...
   return (void*)0;
+}
+
+e_rtsp_requests get_requestType()
+{
+
 }
 
 void start_server(int port)
@@ -51,7 +110,7 @@ void start_server(int port)
 		exit (EXIT_FAILURE);
 	}
 	
-	if(bind(sockfd, addr_info, sizeof(addr_info)) == -1)
+	if(bind(sockfd, addr_info->ai_addr, sizeof(addr_info)) == -1)
 	{
 		exit (EXIT_FAILURE);
 		perror ("binding failed");
@@ -66,18 +125,19 @@ void start_server(int port)
 	//finally, call accept
 	
 	struct addrinfo *client_addr_info;
+	memset(&client_addr_info, 0, sizeof client_addr_info);
 	while(true)
 	{
-		int accept = accept(socketfd, &client_addr_info, sizeof(client_addr_info));
+		int accept_fd = accept(socketfd, &client_addr_info->ai_addr, sizeof(client_addr_info->ai_addr));
 		
-    // Required variables
-    pthread_t thread; // Thread to be created
-    // Creates the thread and calls the function serve_client.
-    pthread_create(&thread, NULL, serve_client, (void *) (intptr_t) server_port);
-    // Detaches the thread. This means that, once the thread finishes, it is destroyed.
-    pthread_detach(thread);
-    // we then want to start a timer for this pthread
-	//thread
+		// Required variables
+		pthread_t thread; // Thread to be created
+		// Creates the thread and calls the function serve_client.
+		pthread_create(&thread, NULL, serve_client, (void *) (intptr_t) accept_fd);
+		// Detaches the thread. This means that, once the thread finishes, it is destroyed.
+		pthread_detach(thread);
+		// we then want to start a timer for this pthread
+		//thread
 	}
     
 }
