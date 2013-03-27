@@ -12,6 +12,7 @@
 #include <stdbool.h>
 
 #define ALLOWED_CONNECTIONS 5
+#define T
 typedef enum bool {
 false=0;
 true=1;
@@ -50,7 +51,7 @@ void *serve_client(void *ptr) {
 		for(int j = 0; j < read_size; j++)
 		{
 			char data_char = data[j];
-			if(strpbrk(data_char, KEY) != null)
+			if(strpbrk(data_char, NEW_LINE) != null)
 			{
 				line_counter++;
 				parsed_data[line_counter] = malloc(1024);
@@ -64,6 +65,7 @@ void *serve_client(void *ptr) {
 	
 	//at this point, we have our parsed data
 	//now, we need to analyze it
+	c
 	
 	//deal with it
   }
@@ -86,21 +88,19 @@ void start_server(int port)
 //once accept returns, we call code below, then recall accept (it should be in some kind of loop)
 
 	int server_port = port;
-	int socketfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	int sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	typedef struct addrinfo *addr_info;
-	typedef struct addrinfo hints;
+	typedef struct addrinfo *hints;
 		
 	if(socketfd < 0)
 	{
-		perror ("socket");
-        exit (EXIT_FAILURE);
+		perror ("socket can't be made");
 	}
 	
-	memset(&hints, 0, sizeof hints);
+	memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE; // use my IP
-
 	
 	error = getaddrinfo(NULL, server_port, &hints, &addr_info);
 	if(error != 0)
@@ -110,36 +110,39 @@ void start_server(int port)
 		exit (EXIT_FAILURE);
 	}
 	
-	if(bind(sockfd, addr_info->ai_addr, sizeof(addr_info)) == -1)
+	typedef struct sockaddr *addr_sock;
+	addr_sock->sin_family = AF_INET
+	addr_sock->sin_port = htons(server_port);
+	//get IP for client, put into dsr
+	addr_sock->sin_addr = inet_pton(AF_INET, client, dst);
+	
+	if(bind(sockfd, addr_info, sizeof(addr_info)) == -1)
 	{
-		exit (EXIT_FAILURE);
 		perror ("binding failed");
 	}
 	
 	if(listen(sockfd, ALLOWED_CONNECTIONS) == -1)
 	{
-		exit (EXIT_FAILURE);
 		perror ("listening failed");
 	}
 	
 	//finally, call accept
 	
 	struct addrinfo *client_addr_info;
-	memset(&client_addr_info, 0, sizeof client_addr_info);
+	memset(&client_addr_info, 0, sizeof(client_addr_info));
 	while(true)
 	{
-		int accept_fd = accept(socketfd, &client_addr_info->ai_addr, sizeof(client_addr_info->ai_addr));
+		int accept = accept(socketfd, &client_addr_info, sizeof(client_addr_info));
 		
 		// Required variables
 		pthread_t thread; // Thread to be created
 		// Creates the thread and calls the function serve_client.
-		pthread_create(&thread, NULL, serve_client, (void *) (intptr_t) accept_fd);
+		pthread_create(&thread, NULL, serve_client, (void *) (intptr_t) server_port);
 		// Detaches the thread. This means that, once the thread finishes, it is destroyed.
 		pthread_detach(thread);
 		// we then want to start a timer for this pthread
 		//thread
 	}
-    
 }
 
 //set up a separate datagram socket for recieving packets after the TCP connection has been made.
