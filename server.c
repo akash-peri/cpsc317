@@ -48,7 +48,8 @@ void *serve_client(void *ptr) {
 			done = true; // nothing else to read this time
 		}
 		
-		for(int j = 0; j < read_size; j++)
+        int j;
+		for(j = 0; j < read_size; j++)
 		{
 			char data_char = data[j];
 			if(strpbrk(data_char, NEW_LINE) != null)
@@ -179,12 +180,12 @@ void udp_server(){
     
     close(sockfd);
 }
+
 /*
 
 
-
 //should return encoded as jpeg packets to be sent through UDP
-void load_video(){
+void load_video(String filename){
     CvCapture *video;
     IplImage *image;
     CvMat *thumb;
@@ -198,7 +199,7 @@ void load_video(){
     // The file doesn't exist or can't be captured as a video file.
 }
 
-    // Obtain the next frame from the video file
+    // Obwthe next frame from the video file
         image = cvQueryFrame(video);
             if (!image) {
     // Next frame doesn't exist or can't be obtained.
