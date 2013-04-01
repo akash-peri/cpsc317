@@ -181,7 +181,7 @@ void udp_server(){
     close(sockfd);
 }
 
-/*
+
 
 
 //should return encoded as jpeg packets to be sent through UDP
@@ -199,7 +199,7 @@ void load_video(String filename){
     // The file doesn't exist or can't be captured as a video file.
 }
 
-    // Obwthe next frame from the video file
+    // Obtain the next frame from the video file
         image = cvQueryFrame(video);
             if (!image) {
     // Next frame doesn't exist or can't be obtained.
@@ -220,6 +220,8 @@ void load_video(String filename){
 
 // Close the video file
 cvReleaseCapture(&video);
+    
+    /*
 }
 void timer(){
     // This struct is created to save information that will be needed by the timer,
