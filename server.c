@@ -27,8 +27,16 @@ void *serve_client(void *ptr) {
   {
 	//if data in socket
 	
-	char data[4096] = (char [])malloc(4096);
-	char parsed_data[16][1024] = (char [][]]malloc(16*1024);
+	char *data = (char *)malloc(4096);
+	char **parsed_data = (char **]malloc(4);
+	if(parsed_data)
+	{
+		int j = 0;
+		for(j = 0; j < 4; j++)
+		{
+			parsed_data[0] = (char *)malloc(1024);
+		}
+	}
 		
 	int done = FALSE;
 	int line_counter = 0;
@@ -47,16 +55,12 @@ void *serve_client(void *ptr) {
 			done = TRUE; // nothing else to read this time
 		}
 		
-<<<<<<< HEAD
         int j;
-=======
-		int j;
->>>>>>> Updates to project
 		for(j = 0; j < read_size; j++)
 		{
 			char data_char = data[j];
 			char new_line = {'\n'};
-			if(strpbrk(data_char, new_line) != null)
+			if(strpbrk(data_char, new_line) != NULL)
 			{
 				line_counter++;
 				//parsed_data[line_counter] = malloc(1024);
@@ -68,7 +72,7 @@ void *serve_client(void *ptr) {
 		}
 	}
 	free(data);
-	parsed_data = (char *[]) realloc (parsed_data, (line_counter + 1) * 4096);
+	parsed_data = (char **) realloc (parsed_data, (line_counter + 1) * 1024);
 	
 	//at this point, we have our parsed data
 	//now, we need to analyze it
@@ -80,7 +84,7 @@ void *serve_client(void *ptr) {
 	
 	int char_length = get_word_size(parsed_data, 0, 0, SPACE);
 	int char_count = char_length;
-	char control_string[char_length] = (char [])malloc(char_length);
+	char *control_string = (char *)malloc(char_length);
 	set_word(parsed_data, word_string, 0, char_count);
 	
 	//control string can be SELECT, PLAY, PAUSE, TEARDOWN
@@ -89,12 +93,12 @@ void *serve_client(void *ptr) {
 		//get the video name now
 		char_length = get_word_size(parsed_data, 0, ++char_count, SPACE);
 		char_count += char_length;
-		char movie_string[char_length] = (char [])malloc(char_length);
+		char *movie_string = (char *)malloc(char_length);
 		set_word(parsed_data, word_string, 0, char_count);
 		//get the rtsp format
 		char_length = get_word_size(parsed_data, 0, ++char_count, SPACE);
 		char_count += char_length;
-		char rtsp_format[char_length] = (char [])malloc(char_length);
+		char *rtsp_format = (char *)malloc(char_length);
 		set_word(parsed_data, rtsp_format, 0, char_count);
 		
 		//goto second line, get sequence number
@@ -107,7 +111,7 @@ void *serve_client(void *ptr) {
 		//This is for the sequence number
 		char_length = get_word_size(parsed_data, 1, ++char_count, SPACE);
 		char_count += char_length;
-		char cseq[char_length] = (char [])malloc(char_length);
+		char *cseq = (char *)malloc(char_length);
 		set_word(parsed_data, cseq, 1, char_count);
 		
 		//goto third line, get port number
@@ -120,7 +124,7 @@ void *serve_client(void *ptr) {
 		//This is for the RTP/UDP;
 		char_length = get_word_size(parsed_data, 2, ++char_count, SPACE);
 		char_count += char_length;
-		transport_type = (char [])malloc(char_length);
+		transport_type = (char *)malloc(char_length);
 		set_word(parsed_data, transport_type, 2, char_count);
 		//This is for the client_port=
 		char_length = get_word_size(parsed_data, 2, ++char_count, SPACE);
@@ -128,14 +132,14 @@ void *serve_client(void *ptr) {
 		//This the port nubmer which we wnat1
 		char_length = get_word_size(parsed_data, 2, ++char_count, SPACE);
 		char_count += char_length;
-		char port_string[char_length] = (char [])malloc(char_length);
+		char *port_string = (char *)malloc(char_length);
 		set_word(parsed_data, port_string, 2, char_count);
 		//at this point, we have our char array with port_num, call video setup now
 		
 		//once video setup is done, formulate response
 		
 		//for now, assume it's the standard successful scenario
-		char return_array[400] = (char [])malloc(400);
+		char *return_array = (char *)malloc(400);
 		strcpy(return_array, rtsp_format);
 		strcat(return_array, "200"); // the ok code
 		strcat(return_array, "OK");
@@ -161,6 +165,8 @@ void *serve_client(void *ptr) {
 	{
 	
 	}
+	
+	free(control_string);
 	
 	//deal with it
   }
