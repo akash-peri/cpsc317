@@ -12,11 +12,11 @@
 #include <stdbool.h>
 
 #define ALLOWED_CONNECTIONS 5
-#define T
-typedef enum bool {
-false=0;
-true=1;
-} bool;
+#define TRUE 1
+#define FALSE 0
+
+char *rtsp_format;
+char *transport_type;
 
 void *serve_client(void *ptr) {
   // Converts ptr back to integer.
@@ -27,16 +27,15 @@ void *serve_client(void *ptr) {
   {
 	//if data in socket
 	
-	char data[4096];
-	char *parsed_data[4096];
-	parsed_data[0] = malloc(1024);
+	char data[4096] = (char [])malloc(4096);
+	char parsed_data[16][1024] = (char [][]]malloc(16*1024);
 		
-	bool done = false;
+	int done = FALSE;
 	int line_counter = 0;
 	int char_counter = 0;
-	while(!done)
+	while(done == 0)
 	{
-		int read_size = read(client_fd, data, 4096);
+		int read_size = (int) read(client_fd, data, 4096);
 		if(read_size < 0)
 		{
 			perror ("read failed");
@@ -45,17 +44,22 @@ void *serve_client(void *ptr) {
 		
 		if(read_size < 4096)
 		{
-			done = true; // nothing else to read this time
+			done = TRUE; // nothing else to read this time
 		}
 		
+<<<<<<< HEAD
         int j;
+=======
+		int j;
+>>>>>>> Updates to project
 		for(j = 0; j < read_size; j++)
 		{
 			char data_char = data[j];
-			if(strpbrk(data_char, NEW_LINE) != null)
+			char new_line = {'\n'};
+			if(strpbrk(data_char, new_line) != null)
 			{
 				line_counter++;
-				parsed_data[line_counter] = malloc(1024);
+				//parsed_data[line_counter] = malloc(1024);
 			}
 			else
 			{
@@ -63,10 +67,100 @@ void *serve_client(void *ptr) {
 			}
 		}
 	}
+	free(data);
+	parsed_data = (char *[]) realloc (parsed_data, (line_counter + 1) * 4096);
 	
 	//at this point, we have our parsed data
 	//now, we need to analyze it
-	c
+	
+	//get first word: should be one of SETUP, PLAY, PAUSE, TEARDOWN
+	
+	char SPACE = ' ';
+	int valid = 1;
+	
+	int char_length = get_word_size(parsed_data, 0, 0, SPACE);
+	int char_count = char_length;
+	char control_string[char_length] = (char [])malloc(char_length);
+	set_word(parsed_data, word_string, 0, char_count);
+	
+	//control string can be SELECT, PLAY, PAUSE, TEARDOWN
+	if(control_string == "SELECT")
+	{
+		//get the video name now
+		char_length = get_word_size(parsed_data, 0, ++char_count, SPACE);
+		char_count += char_length;
+		char movie_string[char_length] = (char [])malloc(char_length);
+		set_word(parsed_data, word_string, 0, char_count);
+		//get the rtsp format
+		char_length = get_word_size(parsed_data, 0, ++char_count, SPACE);
+		char_count += char_length;
+		char rtsp_format[char_length] = (char [])malloc(char_length);
+		set_word(parsed_data, rtsp_format, 0, char_count);
+		
+		//goto second line, get sequence number
+		
+		//reset count
+		char_count = 0;
+		//This is for CSeq: 
+		char_length = get_word_size(parsed_data, 1, ++char_count, SPACE);
+		char_count += char_length;
+		//This is for the sequence number
+		char_length = get_word_size(parsed_data, 1, ++char_count, SPACE);
+		char_count += char_length;
+		char cseq[char_length] = (char [])malloc(char_length);
+		set_word(parsed_data, cseq, 1, char_count);
+		
+		//goto third line, get port number
+		
+		//reset count
+		char_count = 0;
+		//This is for the Transport:
+		char_length = get_word_size(parsed_data, 2, ++char_count, SPACE);
+		char_count += char_length;
+		//This is for the RTP/UDP;
+		char_length = get_word_size(parsed_data, 2, ++char_count, SPACE);
+		char_count += char_length;
+		transport_type = (char [])malloc(char_length);
+		set_word(parsed_data, transport_type, 2, char_count);
+		//This is for the client_port=
+		char_length = get_word_size(parsed_data, 2, ++char_count, SPACE);
+		char_count += char_length;
+		//This the port nubmer which we wnat1
+		char_length = get_word_size(parsed_data, 2, ++char_count, SPACE);
+		char_count += char_length;
+		char port_string[char_length] = (char [])malloc(char_length);
+		set_word(parsed_data, port_string, 2, char_count);
+		//at this point, we have our char array with port_num, call video setup now
+		
+		//once video setup is done, formulate response
+		
+		//for now, assume it's the standard successful scenario
+		char return_array[400] = (char [])malloc(400);
+		strcpy(return_array, rtsp_format);
+		strcat(return_array, "200"); // the ok code
+		strcat(return_array, "OK");
+		strcat(return_array, "/n");
+		strcat(return_array, "CSeq: ");
+		strcat(return_array, cseq);
+		strcat(return_array, "Session: ");
+		strcat(return_array, get_session_num());
+	}
+	else if(control_string == "PLAY")
+	{
+		
+	}
+	else if(control_string == "PAUSE")
+	{
+	
+	}
+	else if(control_string == "TEARDOWN")
+	{
+	
+	}
+	else
+	{
+	
+	}
 	
 	//deal with it
   }
@@ -78,6 +172,55 @@ void *serve_client(void *ptr) {
 e_rtsp_requests get_requestType()
 {
 
+}
+
+int get_word_size(char [][]array, int line, int start_pos, char delimiter)
+{
+	int char_count = start_pos;
+	int valid = 1;
+	if(char_count >= sizeof(array)) // if we dont have enough space to read one char, then this is invalid
+	{
+		valid = 0;
+	}
+	while(valid)
+	{
+		char val = parsed_data[line][char_count++];
+		if(val == delimiter || char_count >= sizeof(array))
+		{
+			break;
+		}
+		//maximum length of first code; longer than this is an invalid value
+		else if(char_count > 8)
+		{
+			valid = 0;
+			break;
+		}
+	}
+	
+	return char_count;
+}
+
+//randomize
+char* get_session_num()
+{
+	return "123456";
+}
+	
+set_word(char[][] array, char[] destination, int line, int start_pos, int char_count)
+{
+	if(valid == 0)
+	{
+		perror ("Unexpected request from client");
+		return (void*)0;
+	}
+	else
+	{
+		int j;
+		for(j = 0; j < char_count; j++)
+		{
+			destination[j] = array[line][j];
+		}
+	}
 }
 
 void start_server(int port)
@@ -108,14 +251,13 @@ void start_server(int port)
 	{
 		//error determining address info of server
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
-		exit (EXIT_FAILURE);
 	}
 	
 	typedef struct sockaddr *addr_sock;
-	addr_sock->sin_family = AF_INET
-	addr_sock->sin_port = htons(server_port);
+	addr_sock.sin_family = AF_INET
+	addr_sock.sin_port = htons(server_port);
 	//get IP for client, put into dsr
-	addr_sock->sin_addr = inet_pton(AF_INET, client, dst);
+	addr_sock.sin_addr = inet_pton(AF_INET, client, dst);
 	
 	if(bind(sockfd, addr_info, sizeof(addr_info)) == -1)
 	{
@@ -167,13 +309,13 @@ void udp_server(){
     getaddrinfo("hostname", PORT, &udpHints, &serverInfo);
 
     // loop through all the results and make a socket
-    for(p = serverInfo; p != NULL; p = p->ai_next) {
-        sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+    for(p = serverInfo; p != NULL; p = p.ai_next) {
+        sockfd = socket(p.ai_family, p.ai_socktype, p.ai_protocol);
     }
    
     
     //store datagram packets and send if exist
-    sendto(sockfd, *PACK, LEN, 0, p->ai_addr, p->ai_addrlen);
+    sendto(sockfd, *PACK, LEN, 0, p.ai_addr, p.ai_addrlen);
     
     //free the socket used
     freeaddrinfo(serverInfo);
@@ -216,7 +358,7 @@ void load_video(String filename){
         const static int encodeParams[] = { CV_IMWRITE_JPEG_QUALITY, 30 };
         encoded = cvEncodeImage(".jpeg", thumb, encodeParams);
 
-// After the call above, the encoded data is in encoded->data.ptr and has a length of encoded->cols bytes.
+// After the call above, the encoded data is in encodeddata.ptr and has a length of encoded->cols bytes.
 
 // Close the video file
 cvReleaseCapture(&video);
