@@ -18,3 +18,4 @@ void set_word_single_array(char *array, char *destination, int start_pos, int ch
 int get_word_size_double_array(char **array, int line, int start_pos, char delimiter);
 int get_word_size_single_array(char *array, int start_pos, char delimiter);
 char* get_session_num();
+void get_host_name();

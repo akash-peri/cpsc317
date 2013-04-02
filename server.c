@@ -154,7 +154,7 @@ void *serve_client(void *ptr) {
 		
 		//split the string into useable portions
 		
-		//(for interleaved=$)
+		//(for interleaved=$a)
 		char_length = get_word_size_single_array(interleaved_string, char_count, '$');
 		char_count += char_length;
 		//for a: check what the delimeter should be, space for now
@@ -403,7 +403,6 @@ void start_server(int port)
 	char *server_port = malloc(sizeof(int)*8+1);
 	//itoa(port,server_port,10);
 	sprintf(server_port,"%d",port);
-	printf("output: %s",server_port);
 	int sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	struct addrinfo *addr_info, *rp;
 	int sfd;
@@ -461,12 +460,20 @@ void start_server(int port)
         perror("Could not bind\n");
         exit(1);
     }
-	freeaddrinfo(addr_info); 
+	
 	
 	if(listen(sockfd, ALLOWED_CONNECTIONS) == -1)
 	{
 		perror ("listening failed");
 	}
+	
+	//Print out info on server host and port number
+	
+	//printf("Hostname: %s\n", addr_info->ai_flags);
+	//printf("Hostname: %s\n", addr_info->ai_canonname);
+	get_host_name();
+	printf("Portnum: %s\n", server_port);
+	freeaddrinfo(addr_info); 
 	
 	//finally, call accept
 	
@@ -489,41 +496,31 @@ void start_server(int port)
 		//thread
 	}
 }
-                                  
 
-//set up a separate datagram socket for recieving packets after the TCP connection has been made.
-#define PORT 1111 //temp port to be used for datagram. GET FROM TCP.
-#define PACK NULL // pointer to the data packets we want to sent GET FROM DECODED VIDEO
-#define LEN 0//number of bytes we want to send. GET FROM DECODED VIDEO
+void get_host_name()
+{
+	struct addrinfo hints, *info, *p;
+	int gai_result;
 
-//UDP connection
-void udp_server(){
-    
-    int sockfd;
-    struct addrinfo udpHints;
-    struct addrinfo *serverInfo;
-    struct addrinfo *p;
-    
-    memset (&udpHints,0,sizeof udpHints);//initialize datagram struct
-    udpHints.ai_family = AF_UNSPEC;
-    udpHints.ai_socktype = SOCK_DGRAM;
-    
-    //gets all addr info and set it to serverinfo
-    getaddrinfo("hostname", PORT, &udpHints, &serverInfo);
+	char hostname[1024];
+	hostname[1023] = '\0';
+	gethostname(hostname, 1023);
 
-    // loop through all the results and make a socket
-    for(p = serverInfo; p != NULL; p = p->ai_next) {
-        sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
-    }
-   
-    
-    //store datagram packets and send if exist
-    sendto(sockfd, PACK, LEN, 0, p->ai_addr, p->ai_addrlen);
-    
-    //free the socket used
-    freeaddrinfo(serverInfo);
-    
-    close(sockfd);
+	memset(&hints, 0, sizeof hints);
+	hints.ai_family = AF_UNSPEC; /*either IPV4 or IPV6*/
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_flags = AI_CANONNAME;
+
+	if ((gai_result = getaddrinfo(hostname, "http", &hints, &info)) != 0) {
+		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(gai_result));
+		exit(1);
+	}
+
+	for(p = info; p != NULL; p = p->ai_next) {
+		printf("Hostname: %s\n", p->ai_canonname);
+	}
+
+	freeaddrinfo(info);
 }
                                   
 /*
