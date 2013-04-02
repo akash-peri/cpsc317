@@ -12,12 +12,9 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
-<<<<<<< HEAD
 #include <unistd.h>
 #include "server.h"
 #include <arpa/inet.h>
-=======
->>>>>>> sync
 
 #define ALLOWED_CONNECTIONS 5
 #define TRUE 1
@@ -35,7 +32,7 @@ void *serve_client(void *ptr) {
   {
 	//if data in socket
 	
-<<<<<<< HEAD
+
 	char *data = (char *)malloc(4096);
 	char **parsed_data = (char **)malloc(4);
 	if(parsed_data)
@@ -46,10 +43,10 @@ void *serve_client(void *ptr) {
 			parsed_data[0] = (char *)malloc(1024);
 		}
 	}
-=======
+
       char* data = (char *)malloc(4096);
 	char parsed_data[16][1024] = (char [][]]malloc(16*1024);
->>>>>>> sync
+
 		
 	int done = FALSE;
 	int line_counter = 0;
@@ -68,7 +65,7 @@ void *serve_client(void *ptr) {
 			done = TRUE; // nothing else to read this time
 		}
 		
-<<<<<<< HEAD
+
         int j;
 		for(j = 0; j < read_size; j++)
 		{
@@ -77,14 +74,13 @@ void *serve_client(void *ptr) {
 			data_array[0] = data_char;
 			char *new_line = {"\n"};
 			if(strpbrk(data_array, new_line) != NULL)
-=======
+
 		int j;
 		for(j = 0; j < read_size; j++)
 		{
 			char data_char = data[j];
 			char new_line = {'\n'};
 			if(strpbrk(data_char, new_line) != NULL)
->>>>>>> sync
 			{
 				line_counter++;
 				//parsed_data[line_counter] = malloc(1024);
