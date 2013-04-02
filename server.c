@@ -5,11 +5,16 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <netdb.h>
 #include <netinet/in.h>
 #include <signal.h>
 #include <time.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include "server.h"
+#include <arpa/inet.h>
 
 #define ALLOWED_CONNECTIONS 5
 #define TRUE 1
@@ -28,7 +33,7 @@ void *serve_client(void *ptr) {
 	//if data in socket
 	
 	char *data = (char *)malloc(4096);
-	char **parsed_data = (char **]malloc(4);
+	char **parsed_data = (char **)malloc(4);
 	if(parsed_data)
 	{
 		int j = 0;
@@ -59,8 +64,10 @@ void *serve_client(void *ptr) {
 		for(j = 0; j < read_size; j++)
 		{
 			char data_char = data[j];
-			char new_line = {'\n'};
-			if(strpbrk(data_char, new_line) != NULL)
+			char *data_array = malloc(2);
+			data_array[0] = data_char;
+			char *new_line = {"\n"};
+			if(strpbrk(data_array, new_line) != NULL)
 			{
 				line_counter++;
 				//parsed_data[line_counter] = malloc(1024);
@@ -85,21 +92,21 @@ void *serve_client(void *ptr) {
 	int char_length = get_word_size(parsed_data, 0, 0, SPACE);
 	int char_count = char_length;
 	char *control_string = (char *)malloc(char_length);
-	set_word(parsed_data, word_string, 0, char_count);
+	set_word(parsed_data, control_string, 0, char_count, char_length);
 	
 	//control string can be SELECT, PLAY, PAUSE, TEARDOWN
-	if(control_string == "SELECT")
+	if(strncmp(control_string,"SELECT",7))
 	{
 		//get the video name now
 		char_length = get_word_size(parsed_data, 0, ++char_count, SPACE);
 		char_count += char_length;
 		char *movie_string = (char *)malloc(char_length);
-		set_word(parsed_data, word_string, 0, char_count);
+		set_word(parsed_data, movie_string, 0, char_count, char_length);
 		//get the rtsp format
 		char_length = get_word_size(parsed_data, 0, ++char_count, SPACE);
 		char_count += char_length;
 		char *rtsp_format = (char *)malloc(char_length);
-		set_word(parsed_data, rtsp_format, 0, char_count);
+		set_word(parsed_data, rtsp_format, 0, char_count, char_length);
 		
 		//goto second line, get sequence number
 		
@@ -112,7 +119,7 @@ void *serve_client(void *ptr) {
 		char_length = get_word_size(parsed_data, 1, ++char_count, SPACE);
 		char_count += char_length;
 		char *cseq = (char *)malloc(char_length);
-		set_word(parsed_data, cseq, 1, char_count);
+		set_word(parsed_data, cseq, 1, char_count, char_length);
 		
 		//goto third line, get port number
 		
@@ -125,7 +132,7 @@ void *serve_client(void *ptr) {
 		char_length = get_word_size(parsed_data, 2, ++char_count, SPACE);
 		char_count += char_length;
 		transport_type = (char *)malloc(char_length);
-		set_word(parsed_data, transport_type, 2, char_count);
+		set_word(parsed_data, transport_type, 2, char_count, char_length);
 		//This is for the client_port=
 		char_length = get_word_size(parsed_data, 2, ++char_count, SPACE);
 		char_count += char_length;
@@ -133,7 +140,7 @@ void *serve_client(void *ptr) {
 		char_length = get_word_size(parsed_data, 2, ++char_count, SPACE);
 		char_count += char_length;
 		char *port_string = (char *)malloc(char_length);
-		set_word(parsed_data, port_string, 2, char_count);
+		set_word(parsed_data, port_string, 2, char_count, char_length);
 		//at this point, we have our char array with port_num, call video setup now
 		
 		//once video setup is done, formulate response
@@ -149,21 +156,26 @@ void *serve_client(void *ptr) {
 		strcat(return_array, "Session: ");
 		strcat(return_array, get_session_num());
 	}
-	else if(control_string == "PLAY")
+	else if(strncmp(control_string,"PLAY",4))
 	{
 		
 	}
-	else if(control_string == "PAUSE")
+	else if(strncmp(control_string,"PAUSE",5))
 	{
 	
 	}
-	else if(control_string == "TEARDOWN")
+	else if(strncmp(control_string,"TEARDOWN",8))
 	{
 	
 	}
 	else
 	{
+		valid = 0;
+	}
 	
+	if(!valid)
+	{
+		break;
 	}
 	
 	free(control_string);
@@ -175,12 +187,14 @@ void *serve_client(void *ptr) {
   return (void*)0;
 }
 
+/*
 e_rtsp_requests get_requestType()
 {
 
 }
+*/
 
-int get_word_size(char [][]array, int line, int start_pos, char delimiter)
+int get_word_size(char **array, int line, int start_pos, char delimiter)
 {
 	int char_count = start_pos;
 	int valid = 1;
@@ -190,7 +204,7 @@ int get_word_size(char [][]array, int line, int start_pos, char delimiter)
 	}
 	while(valid)
 	{
-		char val = parsed_data[line][char_count++];
+		char val = array[line][char_count++];
 		if(val == delimiter || char_count >= sizeof(array))
 		{
 			break;
@@ -212,21 +226,27 @@ char* get_session_num()
 	return "123456";
 }
 	
-set_word(char[][] array, char[] destination, int line, int start_pos, int char_count)
+void set_word(char **array, char *destination, int line, int start_pos, int char_count)
 {
+
+	int j;
+		for(j = 0; j < char_count; j++)
+		{
+			destination[j] = array[line][j];
+		}
+
+		/*
 	if(valid == 0)
 	{
 		perror ("Unexpected request from client");
 		return (void*)0;
 	}
+	
 	else
 	{
-		int j;
-		for(j = 0; j < char_count; j++)
-		{
-			destination[j] = array[line][j];
-		}
+		
 	}
+	*/
 }
 
 void start_server(int port)
@@ -237,35 +257,43 @@ void start_server(int port)
 //then, call accept to get client connections
 //once accept returns, we call code below, then recall accept (it should be in some kind of loop)
 
-	int server_port = port;
+	char *server_port = malloc(sizeof(int));
+	server_port[0] = (char)port;
 	int sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	typedef struct addrinfo *addr_info;
-	typedef struct addrinfo *hints;
+	struct addrinfo *addr_info;
+	struct addrinfo hints;
 		
-	if(socketfd < 0)
+	if(sockfd < 0)
 	{
 		perror ("socket can't be made");
 	}
 	
-	memset(&hints, 0, sizeof(hints));
+	memset(&hints, 0, sizeof(struct addrinfo));
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE; // use my IP
+	hints.ai_protocol = 0;
+    hints.ai_canonname = NULL;
+    hints.ai_addr = NULL;
+    hints.ai_next = NULL;
 	
-	error = getaddrinfo(NULL, server_port, &hints, &addr_info);
+	int error = getaddrinfo(NULL, server_port, &hints, &addr_info);
 	if(error != 0)
 	{
 		//error determining address info of server
-		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
+		perror("getaddrinfo failed");
 	}
 	
-	typedef struct sockaddr *addr_sock;
-	addr_sock.sin_family = AF_INET
+	/*
+	struct sockaddr_in addr_sock;
+	memset(&addr_sock, 0, sizeof(struct sockaddr_in));
+	addr_sock.sin_family = AF_INET;
 	addr_sock.sin_port = htons(server_port);
-	//get IP for client, put into dsr
+	//get IP for server, put into dsr
 	addr_sock.sin_addr = inet_pton(AF_INET, client, dst);
+	*/
 	
-	if(bind(sockfd, addr_info, sizeof(addr_info)) == -1)
+	if(bind(sockfd, addr_info->ai_addr, sizeof(addr_info->ai_addr)) == -1)
 	{
 		perror ("binding failed");
 	}
@@ -281,7 +309,7 @@ void start_server(int port)
 	memset(&client_addr_info, 0, sizeof(client_addr_info));
 	while(true)
 	{
-		int accept = accept(socketfd, &client_addr_info, sizeof(client_addr_info));
+		int accept_con = accept(sockfd, client_addr_info->ai_addr, sizeof(client_addr_info->ai_addr));
 		
 		// Required variables
 		pthread_t thread; // Thread to be created
