@@ -24,6 +24,7 @@ all: rtspd cloudrtspd
 # create the file, a default rule is used, which calls the compiler
 # (CC variable above) with LDFLAGS and LDLIBS.
 rtspd: server.o main.o
+	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 cloudrtspd: cloud_server.o main.o
 
 # This rule indicates that server.o depends on server.c and server.h,
