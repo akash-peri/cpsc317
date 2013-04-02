@@ -523,48 +523,40 @@ void get_host_name()
 	freeaddrinfo(info);
 }
                                   
-/*
 
-
-//should return encoded as jpeg packets to be sent through UDP
-void load_video(String filename){
-    CvCapture *video;
-    IplImage *image;
-    CvMat *thumb;
-    CvMat *encoded;
-    
-    // Open the video file.
-    //get file name from TCP client
-    video = cvCaptureFromFile(filename);
-
-        if (!video) {
-    // The file doesn't exist or can't be captured as a video file.
-}
-
+char[] get_frame(){
     // Obtain the next frame from the video file
-        image = cvQueryFrame(video);
-            if (!image) {
-    // Next frame doesn't exist or can't be obtained.
-}
-
+    
+    IplImage *image;
+    CvMat *encoded;
+    char [] frames;
+    
+    image = cvQueryFrame(video);
+    if (!image) {
+        // Next frame doesn't exist or can't be obtained.
+        return -2
+    }
+    
     // Position the video at a specific frame number position
-            cvSetCaptureProperty(video, CV_CAP_PROP_POS_FRAMES, next_frame);
-
-    // Convert the frame to a smaller size (WIDTH x HEIGHT)
-            thumb = cvCreateMat(WIDTH, HEIGHT, CV_8UC3);
-            cvResize(img, thumb, CV_INTER_AREA);
-
-    // Encode the frame in JPEG format with JPEG quality 30%.
-        const static int encodeParams[] = { CV_IMWRITE_JPEG_QUALITY, 30 };
-        encoded = cvEncodeImage(".jpeg", thumb, encodeParams);
-
-// After the call above, the encoded data is in encodeddata.ptr and has a length of encoded->cols bytes.
-
-// Close the video file
-cvReleaseCapture(&video);
+    cvSetCaptureProperty(video, CV_CAP_PROP_POS_FRAMES, next_frame);
     
+    
+    // Encode the frame in JPEG format with JPEG quality 100%.
+    const static int encodeParams[] = { CV_IMWRITE_JPEG_QUALITY, 100 };
+    encoded = cvEncodeImage(".jpeg", image, encodeParams);
+    
+    int i;
+    for (i=0; i<encoded.data; i++) {
+        frames[i] = cvGetReal1D(encoded.data,i);
+    }
+    return frames;
     
 }
 
-*/
+
+void close_video(char* filename){
+    // Close the video file
+    cvReleaseCapture(&filename);
+}
+
 
