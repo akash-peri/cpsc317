@@ -334,12 +334,12 @@ void start_server(int port)
 		//thread
 	}
 }
-                                  /*
+                                  
 
 //set up a separate datagram socket for recieving packets after the TCP connection has been made.
 #define PORT 1111 //temp port to be used for datagram. GET FROM TCP.
-#define PACK // pointer to the data packets we want to sent GET FROM DECODED VIDEO
-#define LEN //number of bytes we want to send. GET FROM DECODED VIDEO
+#define PACK NULL // pointer to the data packets we want to sent GET FROM DECODED VIDEO
+#define LEN 0//number of bytes we want to send. GET FROM DECODED VIDEO
 
 //UDP connection
 void udp_server(){
@@ -357,21 +357,21 @@ void udp_server(){
     getaddrinfo("hostname", PORT, &udpHints, &serverInfo);
 
     // loop through all the results and make a socket
-    for(p = serverInfo; p != NULL; p = p.ai_next) {
-        sockfd = socket(p.ai_family, p.ai_socktype, p.ai_protocol);
+    for(p = serverInfo; p != NULL; p = p->ai_next) {
+        sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
     }
    
     
     //store datagram packets and send if exist
-    sendto(sockfd, *PACK, LEN, 0, p.ai_addr, p.ai_addrlen);
+    sendto(sockfd, PACK, LEN, 0, p->ai_addr, p->ai_addrlen);
     
     //free the socket used
     freeaddrinfo(serverInfo);
     
     close(sockfd);
 }
-
-
+                                  
+/*
 
 
 //should return encoded as jpeg packets to be sent through UDP
@@ -412,44 +412,6 @@ void load_video(String filename){
 cvReleaseCapture(&video);
     
     
-}
-void timer(){
-    // This struct is created to save information that will be needed by the timer,
-    // such as socket file descriptors, frame numbers and video captures.
-    struct send_frame_data {
-        int socket_fd;
-        // other fields
-    };
-    // This function will be called when the timer ticks
-    void send_frame(union sigval sv_data) {
-        struct send_frame_data *data = (struct send_frame_data *) sv_data.sival_ptr;
-        // You may retrieve information from the caller using data->field_name
-        // ...
-    }// The following snippet is used to create and start a new timer that runs
-    // every 40 ms.
-    struct send_frame_data data; // Set fields as necessary
-    struct sigevent play_event;
-    timer_t play_timer;
-    struct itimerspec play_interval;
-    memset(&play_event, 0, sizeof(play_event));
-    play_event.sigev_notify = SIGEV_THREAD;
-    play_event.sigev_value.sival_ptr = &play_data;
-    play_event.sigev_notify_function = send_frame;
-    play_interval.it_interval.tv_sec = 0;
-    play_interval.it_interval.tv_nsec = 40 * 1000000; // 40 ms in ns
-    play_interval.it_value.tv_sec = 0;
-    play_interval.it_value.tv_nsec = 1; // can't be zero
-    timer_create(CLOCK_REALTIME, &play_event, &play_timer);
-    timer_settime(play_timer, 0, &play_interval, NULL);
-    // The following snippet is used to stop a currently running timer. The current
-    // task is not interrupted, only future tasks are stopped.
-    play_interval.it_interval.tv_sec = 0;
-    play_interval.it_interval.tv_nsec = 0;
-    play_interval.it_value.tv_sec = 0;
-    play_interval.it_value.tv_nsec = 0;
-    timer_settime(play_timer, 0, &play_interval, NULL);
-    // The following line is used to delete a timer.
-    timer_delete(play_timer);
 }
 
 */
