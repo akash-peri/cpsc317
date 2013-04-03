@@ -20,12 +20,6 @@
 #define TRUE 1
 #define FALSE 0
 
-char *rtsp_format;
-char *transport_type;
-char *video_name;
-char *scale_speed;
-char *session_string;
-
 void *serve_client(void *ptr) {
   // Converts ptr back to integer.
   int client_fd = (int) (intptr_t) ptr;
@@ -35,14 +29,15 @@ void *serve_client(void *ptr) {
   {
 	//if data in socket
 	
-	char *data = (char *)malloc(4096);
-	char **parsed_data = (char **)malloc(4);
+	char *data = (char *)malloc(4096*sizeof(char));
+	char **parsed_data = (char **)malloc(5*sizeof(char*));
+	char *count = (char *)malloc(5*sizeof(int));
 	if(parsed_data)
 	{
 		int j = 0;
 		for(j = 0; j < 4; j++)
 		{
-			parsed_data[0] = (char *)malloc(1024);
+			parsed_data[j] = (char *)malloc(1024);
 		}
 	}
 		
@@ -67,13 +62,12 @@ void *serve_client(void *ptr) {
 		for(j = 0; j < read_size; j++)
 		{
 			char data_char = data[j];
-			char *data_array = malloc(2);
-			data_array[0] = data_char;
-			char *new_line = {"\n"};
-			if(strpbrk(data_array, new_line) != NULL)
+			char new_line = '\n';
+			if(data_char == new_line)
 			{
+				count[line_counter] = char_counter;
 				line_counter++;
-				//parsed_data[line_counter] = malloc(1024);
+				char_counter = 0;
 			}
 			else
 			{
@@ -82,10 +76,14 @@ void *serve_client(void *ptr) {
 		}
 	}
 	free(data);
-	parsed_data = (char **) realloc (parsed_data, (line_counter + 1) * 1024);
+	int j;
+	for(j = 0; j < 4; j++)
+	{
+		parsed_data[j] = (char *) realloc (parsed_data[j], count[j]*sizeof(parsed_data[0][0]));
+	}
 	
 	//if it doesnt end with a new line, invalid response
-	if(parsed_data[line_counter][0] != '\n')
+	if(parsed_data[line_counter] != NULL)
 	{
 		perror("the request wasnt formulated properly");
 	}
@@ -96,27 +94,30 @@ void *serve_client(void *ptr) {
 	//get first word: should be one of SETUP, PLAY, PAUSE, TEARDOWN
 	
 	char SPACE = ' ';
+	//char NEWLINE = '\n';
+	char ENDOFARR = '\0';
 	int valid = 1;
 	
 	int char_length = get_word_size_double_array(parsed_data, 0, 0, SPACE);
 	int char_count = 0;
 	char *control_string = (char *)malloc(char_length);
+	memset(control_string, 0, char_length);
 	set_word_double_array(parsed_data, control_string, 0, char_count, char_length);
-	char_count += char_length;
+	char_count += char_length + 1; // for space
 	
-	//control string can be SELECT, PLAY, PAUSE, TEARDOWN
-	if(strncmp(control_string,"SELECT",7))
+	if(strncmp(control_string,"SETUP",5) == 0)
+	//control string can be SETUP, PLAY, PAUSE, TEARDOWN
 	{
 		//get the video name now
 		char_length = get_word_size_double_array(parsed_data, 0, char_count, SPACE);
-		char_count += char_length;
 		char *movie_string = (char *)malloc(char_length);
 		set_word_double_array(parsed_data, movie_string, 0, char_count, char_length);
+		char_count += char_length + 1;
 		//get the rtsp format
-		char_length = get_word_size_double_array(parsed_data, 0, char_count, SPACE);
-		char_count += char_length;
+		char_length = get_word_size_double_array(parsed_data, 0, char_count, ENDOFARR);
 		char *rtsp_format = (char *)malloc(char_length);
 		set_word_double_array(parsed_data, rtsp_format, 0, char_count, char_length);
+		char_count += char_length + 1;
 		
 		//goto second line, get sequence number
 		
@@ -126,10 +127,10 @@ void *serve_client(void *ptr) {
 		char_length = get_word_size_double_array(parsed_data, 1, char_count, SPACE);
 		char_count += char_length;
 		//This is for the sequence number
-		char_length = get_word_size_double_array(parsed_data, 1, char_count, SPACE);
-		char_count += char_length;
+		char_length = get_word_size_double_array(parsed_data, 1, char_count, ENDOFARR);
 		char *cseq = (char *)malloc(char_length);
 		set_word_double_array(parsed_data, cseq, 1, char_count, char_length);
+		char_count += char_length;
 		
 		//goto third line, get port number
 		
@@ -140,28 +141,27 @@ void *serve_client(void *ptr) {
 		char_count += char_length;
 		//This is for the RTP/UDP;
 		char_length = get_word_size_double_array(parsed_data, 2, char_count, SPACE);
-		char_count += char_length;
-		transport_type = (char *)malloc(char_length);
+		char *transport_type = (char *)malloc(char_length);
 		set_word_double_array(parsed_data, transport_type, 2, char_count, char_length);
-		
-		//This is for the interleaved=$a
-		char_length = get_word_size_double_array(parsed_data, 2, char_count, SPACE);
 		char_count += char_length;
+		//This is for the interleaved=$a
+		char_length = get_word_size_double_array(parsed_data, 2, char_count, ENDOFARR);
 		char *interleaved_string = (char *)malloc(char_length);
 		set_word_double_array(parsed_data, interleaved_string, 2, char_count, char_length);
+		char_count += char_length;
 		
+		//split the interleaved string into useable portions
+		
+		//reset count
 		char_count = 0;
-		
-		//split the string into useable portions
-		
 		//(for interleaved=$a)
 		char_length = get_word_size_single_array(interleaved_string, char_count, '$');
 		char_count += char_length;
 		//for a: check what the delimeter should be, space for now
 		char_length = get_word_size_single_array(interleaved_string, char_count, '-');
-		char_count += char_length;
 		char *startpos_string = (char *)malloc(char_length);
 		set_word_single_array(interleaved_string, startpos_string, char_count, char_length);
+		char_count += char_length;
 		
 		//at this point, we have our char array, call video setup now
 		
@@ -181,18 +181,18 @@ void *serve_client(void *ptr) {
 		strcat(return_array, "Session: ");
 		strcat(return_array, get_session_num());
 	}
-	else if(strncmp(control_string,"PLAY",4))
+	else if(strncmp(control_string,"PLAY",4) == 0)
 	{
 		//get the video name now
 		char_length = get_word_size_double_array(parsed_data, 0, char_count, SPACE);
-		char_count += char_length;
 		char *movie_string = (char *)malloc(char_length);
 		set_word_double_array(parsed_data, movie_string, 0, char_count, char_length);
+		char_count += char_length + 1;
 		//get the rtsp format
-		char_length = get_word_size_double_array(parsed_data, 0, char_count, SPACE);
-		char_count += char_length;
+		char_length = get_word_size_double_array(parsed_data, 0, char_count, ENDOFARR);
 		char *rtsp_format = (char *)malloc(char_length);
 		set_word_double_array(parsed_data, rtsp_format, 0, char_count, char_length);
+		char_count += char_length + 1;
 		
 		//goto second line, get sequence number
 		
@@ -202,44 +202,36 @@ void *serve_client(void *ptr) {
 		char_length = get_word_size_double_array(parsed_data, 1, char_count, SPACE);
 		char_count += char_length;
 		//This is for the sequence number
-		char_length = get_word_size_double_array(parsed_data, 1, char_count, SPACE);
-		char_count += char_length;
+		char_length = get_word_size_double_array(parsed_data, 1, char_count, ENDOFARR);
 		char *cseq = (char *)malloc(char_length);
 		set_word_double_array(parsed_data, cseq, 1, char_count, char_length);
+		char_count += char_length;
 		
-		//goto third line, for session number
+		//goto third line, get port number
 		
 		//reset count
 		char_count = 0;
 		//This is for the Session:
 		char_length = get_word_size_double_array(parsed_data, 2, char_count, SPACE);
+		cchar_count += char_length;
+		//This is for the session value
+		char_length = get_word_size_double_array(parsed_data, 2, char_count, ENDOFARR);
+		char *session_num = (char *)malloc(char_length);
+		set_word_double_array(parsed_data, session_num, 2, char_count, char_length);
 		char_count += char_length;
-		//This is for the value
-		char_length = get_word_size_double_array(parsed_data, 2, char_count, SPACE);
-		char_count += char_length;
-		session_string = (char *)malloc(char_length);
-		set_word_double_array(parsed_data, session_string, 2, char_count, char_length);
 		
-		//goto fourth line, for Scale=1, etc
 		//reset count
 		char_count = 0;
-		
-		//This is for the scale
+		//This is for the Scale:
 		char_length = get_word_size_double_array(parsed_data, 2, char_count, SPACE);
 		char_count += char_length;
-		//This is for the scale value
-		char_length = get_word_size_double_array(parsed_data, 2, char_count, SPACE);
+		//This is for the Scale value
+		char_length = get_word_size_double_array(parsed_data, 2, char_count, ENDOFARR);
+		char *scale_value = (char *)malloc(char_length);
+		set_word_double_array(parsed_data, scale_value, 2, char_count, char_length);
 		char_count += char_length;
-		char *scale_val = (char *)malloc(char_length);
-		set_word_double_array(parsed_data, scale_val, 2, char_count, char_length);
 		
-		char_count = 0;
-		
-		//split the string into useable portions
-		//at this point, we have our char array, start playing the video
-
-		//we need to: make sure the video has already been opened (ie, check to make sure setup is already done, and it finished successfuly)
-		//once that is done, send request to play, make sure you include scale as well, for the timer
+		//at this point, we have our char array, call video play now
 		
 		//for now, assume it's the standard successful scenario
 		char *return_array = (char *)malloc(400);
@@ -253,11 +245,11 @@ void *serve_client(void *ptr) {
 		strcat(return_array, "Session: ");
 		strcat(return_array, get_session_num());
 	}
-	else if(strncmp(control_string,"PAUSE",5))
+	else if(strncmp(control_string,"PAUSE",5) == 0)
 	{
 	
 	}
-	else if(strncmp(control_string,"TEARDOWN",8))
+	else if(strncmp(control_string,"TEARDOWN",8) == 0)
 	{
 	
 	}
@@ -291,52 +283,44 @@ int get_word_size_double_array(char **array, int line, int start_pos, char delim
 {
 	int char_count = start_pos;
 	int valid = 1;
-	if(char_count >= sizeof(array)) // if we dont have enough space to read one char, then this is invalid
-	{
-		valid = 0;
-	}
 	while(valid)
 	{
-		char val = array[line][char_count++];
-		if(val == delimiter || char_count >= sizeof(array))
+		char val = array[line][char_count];
+		if(val == delimiter)
 		{
 			break;
 		}
-		//maximum length of first code; longer than this is an invalid value
-		else if(char_count > 8)
+		else if(char_count - start_pos> 128)
 		{
 			valid = 0;
 			break;
 		}
+		char_count++;
 	}
 	
-	return char_count;
+	return char_count - start_pos;
 }
 
 int get_word_size_single_array(char *array, int start_pos, char delimiter)
 {
 	int char_count = start_pos;
 	int valid = 1;
-	if(char_count >= sizeof(array)) // if we dont have enough space to read one char, then this is invalid
-	{
-		valid = 0;
-	}
 	while(valid)
 	{
-		char val = array[char_count++];
-		if(val == delimiter || char_count >= sizeof(array))
+		char val = array[char_count];
+		if(val == delimiter)
 		{
 			break;
 		}
-		//maximum length of first code; longer than this is an invalid value
-		else if(char_count > 8)
+		else if(char_count - start_pos > 128)
 		{
 			valid = 0;
 			break;
 		}
+		char_count++;
 	}
 	
-	return char_count;
+	return char_count - start_pos;
 }
 
 
@@ -354,19 +338,8 @@ void set_word_double_array(char **array, char *destination, int line, int start_
 	{
 		destination[j] = array[line][j + start_pos];
 	}
-
-		/*
-	if(valid == 0)
-	{
-		perror ("Unexpected request from client");
-		return (void*)0;
-	}
-	
-	else
-	{
-		
-	}
-	*/
+	//null terminated
+	destination[j]='\0';
 }
 
 void set_word_single_array(char *array, char *destination, int start_pos, int char_count)
@@ -377,19 +350,7 @@ void set_word_single_array(char *array, char *destination, int start_pos, int ch
 	{
 		destination[j] = array[j + start_pos];
 	}
-
-		/*
-	if(valid == 0)
-	{
-		perror ("Unexpected request from client");
-		return (void*)0;
-	}
-	
-	else
-	{
-		
-	}
-	*/
+	destination[j]='\0';
 }
 
 void start_server(int port)
@@ -417,10 +378,6 @@ void start_server(int port)
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE; // use my IP
-	hints.ai_protocol = 0;
-    hints.ai_canonname = NULL;
-    hints.ai_addr = NULL;
-    hints.ai_next = NULL;
 	
 	int error = getaddrinfo(NULL, server_port, &hints, &addr_info);
 	if(error != 0)
@@ -440,38 +397,25 @@ void start_server(int port)
 
        close(sfd);
     }
-	
-	/*
-	struct sockaddr_in addr_sock;
-	memset(&addr_sock, 0, sizeof(struct sockaddr_in));
-	addr_sock.sin_family = AF_INET;
-	addr_sock.sin_port = htons(server_port);
-	//get IP for server, put into dsr
-	addr_sock.sin_addr = inet_pton(AF_INET, client, dst);
-	*/
-	
-	/*
-	if(bind(sockfd, addr_info->ai_addr, sizeof(addr_info->ai_addr)) == -1)
-	{
-		perror ("binding failed");
-	}
-	*/
+
 	if (rp == NULL) {               /* No address succeeded */
         perror("Could not bind\n");
         exit(1);
     }
 	
 	
-	if(listen(sockfd, ALLOWED_CONNECTIONS) == -1)
+	if(listen(sfd, ALLOWED_CONNECTIONS) == -1)
 	{
 		perror ("listening failed");
 	}
 	
 	//Print out info on server host and port number
 	
-	//printf("Hostname: %s\n", addr_info->ai_flags);
-	//printf("Hostname: %s\n", addr_info->ai_canonname);
-	get_host_name();
+	char hostname[1024];
+	hostname[1023] = '\0';
+	gethostname(hostname, 1024);
+	printf("Hostname: %s\n", hostname);
+	//get_host_name();
 	printf("Portnum: %s\n", server_port);
 	freeaddrinfo(addr_info); 
 	
@@ -481,7 +425,7 @@ void start_server(int port)
 	while(true)
 	{
 		socklen_t addr_size = sizeof(client_addr_info);
-		int accept_con = accept(sockfd, (struct sockaddr *)&client_addr_info, &addr_size);
+		int accept_con = accept(sfd, (struct sockaddr *)&client_addr_info, &addr_size);
 		if(accept_con < 0)
 		{
 			perror ("accept failed");
@@ -489,7 +433,7 @@ void start_server(int port)
 		// Required variables
 		pthread_t thread; // Thread to be created
 		// Creates the thread and calls the function serve_client.
-		pthread_create(&thread, NULL, serve_client, (void *) (intptr_t) server_port);
+		pthread_create(&thread, NULL, serve_client, (void *) (intptr_t) accept_con);
 		// Detaches the thread. This means that, once the thread finishes, it is destroyed.
 		pthread_detach(thread);
 		// we then want to start a timer for this pthread
