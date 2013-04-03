@@ -15,6 +15,8 @@
 #include <unistd.h>
 #include "server.h"
 #include <arpa/inet.h>
+#include <cv.h>
+#include <highgui.h>
 
 #define ALLOWED_CONNECTIONS 5
 #define TRUE 1
@@ -125,12 +127,12 @@ void *serve_client(void *ptr) {
 		char_count = 0;
 		//This is for CSeq: 
 		char_length = get_word_size_double_array(parsed_data, 1, char_count, SPACE);
-		char_count += char_length;
+		char_count += char_length + 1;
 		//This is for the sequence number
 		char_length = get_word_size_double_array(parsed_data, 1, char_count, ENDOFARR);
 		char *cseq = (char *)malloc(char_length);
 		set_word_double_array(parsed_data, cseq, 1, char_count, char_length);
-		char_count += char_length;
+		char_count += char_length + 1;
 		
 		//goto third line, get port number
 		
@@ -138,30 +140,30 @@ void *serve_client(void *ptr) {
 		char_count = 0;
 		//This is for the Transport:
 		char_length = get_word_size_double_array(parsed_data, 2, char_count, SPACE);
-		char_count += char_length;
+		char_count += char_length + 1;
 		//This is for the RTP/UDP;
 		char_length = get_word_size_double_array(parsed_data, 2, char_count, SPACE);
 		char *transport_type = (char *)malloc(char_length);
 		set_word_double_array(parsed_data, transport_type, 2, char_count, char_length);
-		char_count += char_length;
+		char_count += char_length + 1;
 		//This is for the interleaved=$a
 		char_length = get_word_size_double_array(parsed_data, 2, char_count, ENDOFARR);
 		char *interleaved_string = (char *)malloc(char_length);
 		set_word_double_array(parsed_data, interleaved_string, 2, char_count, char_length);
-		char_count += char_length;
+		char_count += char_length + 1;
 		
 		//split the interleaved string into useable portions
 		
 		//reset count
 		char_count = 0;
-		//(for interleaved=$a)
-		char_length = get_word_size_single_array(interleaved_string, char_count, '$');
-		char_count += char_length;
+		//(for interleaved=a)
+		char_length = get_word_size_single_array(interleaved_string, char_count, '=');
+		char_count += char_length + 1;
 		//for a: check what the delimeter should be, space for now
-		char_length = get_word_size_single_array(interleaved_string, char_count, '-');
+		char_length = get_word_size_single_array(interleaved_string, char_count, ENDOFARR);
 		char *startpos_string = (char *)malloc(char_length);
 		set_word_single_array(interleaved_string, startpos_string, char_count, char_length);
-		char_count += char_length;
+		char_count += char_length + 1;
 		
 		//at this point, we have our char array, call video setup now
 		
@@ -172,14 +174,20 @@ void *serve_client(void *ptr) {
 		//for now, assume it's the standard successful scenario
 		char *return_array = (char *)malloc(400);
 		strcpy(return_array, rtsp_format);
-		strcat(return_array, "200"); // the ok code
-		strcat(return_array, "OK");
-		strcat(return_array, "/n");
+		strcat(return_array, " 200"); // the ok code
+		strcat(return_array, " OK");
+		strcat(return_array, "\n");
 		strcat(return_array, "CSeq: ");
 		strcat(return_array, cseq);
-		strcat(return_array, "/n");
+		strcat(return_array, "\n");
 		strcat(return_array, "Session: ");
 		strcat(return_array, get_session_num());
+		
+		if(send(client_fd, (void *)return_array, 400, 0) < 0)
+		{
+			perror("send");
+		}
+		
 	}
 	else if(strncmp(control_string,"PLAY",4) == 0)
 	{
@@ -213,7 +221,7 @@ void *serve_client(void *ptr) {
 		char_count = 0;
 		//This is for the Session:
 		char_length = get_word_size_double_array(parsed_data, 2, char_count, SPACE);
-		cchar_count += char_length;
+		char_count += char_length;
 		//This is for the session value
 		char_length = get_word_size_double_array(parsed_data, 2, char_count, ENDOFARR);
 		char *session_num = (char *)malloc(char_length);
@@ -415,7 +423,6 @@ void start_server(int port)
 	hostname[1023] = '\0';
 	gethostname(hostname, 1024);
 	printf("Hostname: %s\n", hostname);
-	//get_host_name();
 	printf("Portnum: %s\n", server_port);
 	freeaddrinfo(addr_info); 
 	
@@ -439,32 +446,55 @@ void start_server(int port)
 		// we then want to start a timer for this pthread
 		//thread
 	}
+}    
+
+// This struct is created to save information that will be needed by the timer,
+// such as socket file descriptors, frame numbers and video captures.
+struct send_frame_data {
+  int socket_fd;
+  // other fields
+};
+
+// This function will be called when the timer ticks
+void send_frame(union sigval sv_data) {
+  
+  struct send_frame_data *data = (struct send_frame_data *) sv_data.sival_ptr;
+  if(data != NULL)
+  {
+  
+  }
+  // You may retrieve information from the caller using data->field_name
+  // ...
 }
 
-void get_host_name()
+void create_timer()
 {
-	struct addrinfo hints, *info, *p;
-	int gai_result;
+	// The following snippet is used to create and start a new timer that runs
+	// every 40 ms.
+	struct send_frame_data data; // Set fields as necessary
+	struct sigevent play_event;
+	timer_t play_timer;
+	struct itimerspec play_interval;
 
-	char hostname[1024];
-	hostname[1023] = '\0';
-	gethostname(hostname, 1023);
+	memset(&play_event, 0, sizeof(play_event));
+	play_event.sigev_notify = SIGEV_THREAD;
+	play_event.sigev_value.sival_ptr = &data;
+	play_event.sigev_notify_function = send_frame;
 
-	memset(&hints, 0, sizeof hints);
-	hints.ai_family = AF_UNSPEC; /*either IPV4 or IPV6*/
-	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_flags = AI_CANONNAME;
+	timer_create(CLOCK_REALTIME, &play_event, &play_timer);
+	start_timer(play_interval, play_timer);
+	
+	// The following line is used to delete a timer.
+	timer_delete(play_timer);
+}
 
-	if ((gai_result = getaddrinfo(hostname, "http", &hints, &info)) != 0) {
-		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(gai_result));
-		exit(1);
-	}
-
-	for(p = info; p != NULL; p = p->ai_next) {
-		printf("Hostname: %s\n", p->ai_canonname);
-	}
-
-	freeaddrinfo(info);
+void start_timer(struct itimerspec play_interval, timer_t play_timer)
+{
+	play_interval.it_interval.tv_sec = 0;
+	play_interval.it_interval.tv_nsec = 40 * 1000000; // 40 ms in ns
+	play_interval.it_value.tv_sec = 0;
+	play_interval.it_value.tv_nsec = 1; // can't be zero
+	timer_settime(play_timer, 0, &play_interval, NULL);
 }
 
 

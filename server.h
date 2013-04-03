@@ -1,4 +1,7 @@
 #include <stdio.h>
+#include <cv.h>
+#include <highgui.h>
+#include <time.h>
 
 #define NEW_LINE {'\n')
 /*
@@ -18,4 +21,6 @@ void set_word_single_array(char *array, char *destination, int start_pos, int ch
 int get_word_size_double_array(char **array, int line, int start_pos, char delimiter);
 int get_word_size_single_array(char *array, int start_pos, char delimiter);
 char* get_session_num();
-void get_host_name();
+void create_timer();
+void start_timer(struct itimerspec play_interval, timer_t play_timer);
+void stop_timer(struct itimerspec play_interval, timer_t play_timer);
