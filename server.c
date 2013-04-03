@@ -466,8 +466,23 @@ void get_host_name()
 
 	freeaddrinfo(info);
 }
-                                  
 
+
+/*
+
+ int load_video(char filename){
+ 
+ CvCapture *video;
+ 
+ // Open the video file.
+ video = cvCaptureFromFile(filename);
+    
+    if (!video) {
+ // The file doesn't exist or can't be captured as a video file.
+ return -1;
+    }
+ }
+ 
 char[] get_frame(){
     // Obtain the next frame from the video file
     
@@ -489,6 +504,7 @@ char[] get_frame(){
     const static int encodeParams[] = { CV_IMWRITE_JPEG_QUALITY, 100 };
     encoded = cvEncodeImage(".jpeg", image, encodeParams);
     
+    //Loop through the jpeg and convert the 2D matrix into a char array of first matrix objects
     int i;
     for (i=0; i<encoded.data; i++) {
         frames[i] = cvGetReal1D(encoded.data,i);
@@ -504,3 +520,4 @@ void close_video(char* filename){
 }
 
 
+*/
