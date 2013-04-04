@@ -1,5 +1,3 @@
-
-
 #include <stdio.h>
 #include <stdint.h>
 #include <pthread.h>
@@ -16,6 +14,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <cv.h>
+#include <highgui.h>
+
 
 #define NEW_LINE {'\n')
 /*

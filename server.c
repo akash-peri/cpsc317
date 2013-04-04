@@ -1,9 +1,6 @@
 #include "server.h"
 
 
-#include <cv.h>
-#include <highgui.h>
-
 #define ALLOWED_CONNECTIONS 5
 #define TRUE 1
 #define FALSE 0
@@ -225,11 +222,7 @@ void *serve_client(void *ptr) {
 		char_count = 0;
 		//This is for the Session:
 		char_length = get_word_size_double_array(parsed_data, 2, char_count, SPACE);
-<<<<<<< HEAD
 		char_count += char_length + 1;
-=======
-		char_count += char_length;
->>>>>>> Update
 		//This is for the session value
 		char_length = get_word_size_double_array(parsed_data, 2, char_count, ENDOFARR);
 		session_num = (char *)malloc(char_length);
@@ -274,11 +267,153 @@ void *serve_client(void *ptr) {
 	}
 	else if(strncmp(control_string,"PAUSE",5) == 0)
 	{
-	
+		//get the video name now
+		char_length = get_word_size_double_array(parsed_data, 0, char_count, SPACE);
+		movie_string = (char *)malloc(char_length);
+		set_word_double_array(parsed_data, movie_string, 0, char_count, char_length);
+		char_count += char_length + 1;
+		//get the rtsp format
+		char_length = get_word_size_double_array(parsed_data, 0, char_count, ENDOFARR);
+		rtsp_format = (char *)malloc(char_length);
+		set_word_double_array(parsed_data, rtsp_format, 0, char_count, char_length);
+		char_count += char_length + 1;
+		
+		//goto second line, get sequence number
+		
+		//reset count
+		char_count = 0;
+		//This is for CSeq: 
+		char_length = get_word_size_double_array(parsed_data, 1, char_count, SPACE);
+		char_count += char_length + 1;
+		//This is for the sequence number
+		char_length = get_word_size_double_array(parsed_data, 1, char_count, ENDOFARR);
+		cseq = (char *)malloc(char_length);
+		set_word_double_array(parsed_data, cseq, 1, char_count, char_length);
+		char_count += char_length + 1;//get the video name now
+		
+		//goto third line, get port number
+		
+		//reset count
+		char_count = 0;
+		//This is for the Session:
+		char_length = get_word_size_double_array(parsed_data, 2, char_count, SPACE);
+		char_count += char_length + 1;
+		//This is for the session value
+		char_length = get_word_size_double_array(parsed_data, 2, char_count, ENDOFARR);
+		session_num = (char *)malloc(char_length);
+		set_word_double_array(parsed_data, session_num, 2, char_count, char_length);
+		char_count += char_length + 1;
+		
+		//reset count
+		char_count = 0;
+		//This is for the Scale:
+		char_length = get_word_size_double_array(parsed_data, 2, char_count, SPACE);
+		char_count += char_length + 1;
+		//This is for the Scale value
+		char_length = get_word_size_double_array(parsed_data, 2, char_count, ENDOFARR);
+		scale_value = (char *)malloc(char_length);
+		set_word_double_array(parsed_data, scale_value, 2, char_count, char_length);
+		char_count += char_length + 1;
+		
+		//at this point, we have our char array, call video pause now
+		
+		free(movie_string);
+		free(rtsp_format);
+		free(cseq);
+		free(session_num);
+		free(scale_value);
+		
+		//for now, assume it's the standard successful scenario
+		char *return_array = (char *)malloc(400);
+		strcpy(return_array, rtsp_format);
+		strcat(return_array, " 200"); // the ok code
+		strcat(return_array, " OK");
+		strcat(return_array, "\n");
+		strcat(return_array, "CSeq: ");
+		strcat(return_array, cseq);
+		strcat(return_array, "\n");
+		strcat(return_array, "Session: ");
+		strcat(return_array, get_session_num());
+		
+		if(send(client_fd, (void *)return_array, 400, 0) < 0)
+		{
+			perror("send");
+		}
 	}
 	else if(strncmp(control_string,"TEARDOWN",8) == 0)
 	{
-	
+		//get the video name now
+		char_length = get_word_size_double_array(parsed_data, 0, char_count, SPACE);
+		movie_string = (char *)malloc(char_length);
+		set_word_double_array(parsed_data, movie_string, 0, char_count, char_length);
+		char_count += char_length + 1;
+		//get the rtsp format
+		char_length = get_word_size_double_array(parsed_data, 0, char_count, ENDOFARR);
+		rtsp_format = (char *)malloc(char_length);
+		set_word_double_array(parsed_data, rtsp_format, 0, char_count, char_length);
+		char_count += char_length + 1;
+		
+		//goto second line, get sequence number
+		
+		//reset count
+		char_count = 0;
+		//This is for CSeq: 
+		char_length = get_word_size_double_array(parsed_data, 1, char_count, SPACE);
+		char_count += char_length + 1;
+		//This is for the sequence number
+		char_length = get_word_size_double_array(parsed_data, 1, char_count, ENDOFARR);
+		cseq = (char *)malloc(char_length);
+		set_word_double_array(parsed_data, cseq, 1, char_count, char_length);
+		char_count += char_length + 1;//get the video name now
+		
+		//goto third line, get port number
+		
+		//reset count
+		char_count = 0;
+		//This is for the Session:
+		char_length = get_word_size_double_array(parsed_data, 2, char_count, SPACE);
+		char_count += char_length + 1;
+		//This is for the session value
+		char_length = get_word_size_double_array(parsed_data, 2, char_count, ENDOFARR);
+		session_num = (char *)malloc(char_length);
+		set_word_double_array(parsed_data, session_num, 2, char_count, char_length);
+		char_count += char_length + 1;
+		
+		//reset count
+		char_count = 0;
+		//This is for the Scale:
+		char_length = get_word_size_double_array(parsed_data, 2, char_count, SPACE);
+		char_count += char_length + 1;
+		//This is for the Scale value
+		char_length = get_word_size_double_array(parsed_data, 2, char_count, ENDOFARR);
+		scale_value = (char *)malloc(char_length);
+		set_word_double_array(parsed_data, scale_value, 2, char_count, char_length);
+		char_count += char_length + 1;
+		
+		//at this point, we have our char array, call video teardown now
+		
+		free(movie_string);
+		free(rtsp_format);
+		free(cseq);
+		free(session_num);
+		free(scale_value);
+		
+		//for now, assume it's the standard successful scenario
+		char *return_array = (char *)malloc(400);
+		strcpy(return_array, rtsp_format);
+		strcat(return_array, " 200"); // the ok code
+		strcat(return_array, " OK");
+		strcat(return_array, "\n");
+		strcat(return_array, "CSeq: ");
+		strcat(return_array, cseq);
+		strcat(return_array, "\n");
+		strcat(return_array, "Session: ");
+		strcat(return_array, get_session_num());
+		
+		if(send(client_fd, (void *)return_array, 400, 0) < 0)
+		{
+			perror("send");
+		}
 	}
 	else
 	{
@@ -541,15 +676,10 @@ void stop_timer(struct itimerspec *play_interval, timer_t *play_timer)
 	*/
 	return 0;
  }
-<<<<<<< HEAD
  
  /*
  
-=======
-
-
 //timer needs to check if the return frame is NULL. NULL at end of frames.
->>>>>>> Update
 char[] get_frame(){
     // Obtain the next frame from the video file
     
@@ -586,3 +716,5 @@ void close_video(char* filename){
     cvReleaseCapture(&filename);
 }
 
+
+*/
