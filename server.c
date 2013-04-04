@@ -683,11 +683,11 @@ void stop_timer(struct itimerspec *play_interval, timer_t *play_timer)
 }
 
 
-
+CvCapture *video;
 
  int load_video(char *filename)
  {
-	CvCapture *video;
+
 	 
 	// Open the video file.
 	video = cvCaptureFromFile(filename);
@@ -701,15 +701,15 @@ void stop_timer(struct itimerspec *play_interval, timer_t *play_timer)
 	return 0;
  }
  
- /*
  
 //timer needs to check if the return frame is NULL. NULL at end of frames.
-char[] get_frame(){
+char get_frame(){
     // Obtain the next frame from the video file
     
     IplImage *image;
     CvMat *encoded;
-    char [] frames;
+    //need to get array size
+    char frames[10];
     
     image = cvQueryFrame(video);
     if (!image) {
@@ -726,9 +726,11 @@ char[] get_frame(){
     encoded = cvEncodeImage(".jpeg", image, encodeParams);
     
     //Loop through the jpeg and convert the 2D matrix into a char array of first matrix objects
-    int i;
+    int i,j;
     for (i=0; i<encoded.data; i++) {
-        frames[i] = cvGetReal1D(encoded.data,i);
+        for (j=0; j<encoded.data; j++) {
+                frames[i] = cvGetReal2D(encoded.data,i,j);
+        }
     }
     return frames;
     
@@ -737,8 +739,7 @@ char[] get_frame(){
 
 void close_video(char* filename){
     // Close the video file
-    cvReleaseCapture(&filename);
+    cvReleaseCapture(filename);
 }
 
 
-*/
