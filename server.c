@@ -1,32 +1,20 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <pthread.h>
-#include <semaphore.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#include <signal.h>
-#include <time.h>
-#include <string.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include "server.h"
-#include <arpa/inet.h>
-#include <cv.h>
-#include <highgui.h>
+
 
 #define ALLOWED_CONNECTIONS 5
 #define TRUE 1
 #define FALSE 0
 
+// This struct is created to save information that will be needed by the timer,
+// such as socket file descriptors, frame numbers and video captures.
+
 void *serve_client(void *ptr) {
   // Converts ptr back to integer.
   int client_fd = (int) (intptr_t) ptr;
   
-  //loop until we want to close the program
+  	struct create_timer_data timer_data;
+  
+  //loop until we want to close the program1
   while(TRUE)
   {
 	//if data in socket
@@ -107,17 +95,23 @@ void *serve_client(void *ptr) {
 	set_word_double_array(parsed_data, control_string, 0, char_count, char_length);
 	char_count += char_length + 1; // for space
 	
+	char *movie_string;
+	char *rtsp_format;
+	char *cseq;
+	char *session_num;
+	char *scale_value;
+	
 	if(strncmp(control_string,"SETUP",5) == 0)
 	//control string can be SETUP, PLAY, PAUSE, TEARDOWN
 	{
 		//get the video name now
 		char_length = get_word_size_double_array(parsed_data, 0, char_count, SPACE);
-		char *movie_string = (char *)malloc(char_length);
+		movie_string = (char *)malloc(char_length);
 		set_word_double_array(parsed_data, movie_string, 0, char_count, char_length);
 		char_count += char_length + 1;
 		//get the rtsp format
 		char_length = get_word_size_double_array(parsed_data, 0, char_count, ENDOFARR);
-		char *rtsp_format = (char *)malloc(char_length);
+		rtsp_format = (char *)malloc(char_length);
 		set_word_double_array(parsed_data, rtsp_format, 0, char_count, char_length);
 		char_count += char_length + 1;
 		
@@ -130,7 +124,7 @@ void *serve_client(void *ptr) {
 		char_count += char_length + 1;
 		//This is for the sequence number
 		char_length = get_word_size_double_array(parsed_data, 1, char_count, ENDOFARR);
-		char *cseq = (char *)malloc(char_length);
+		cseq = (char *)malloc(char_length);
 		set_word_double_array(parsed_data, cseq, 1, char_count, char_length);
 		char_count += char_length + 1;
 		
@@ -166,10 +160,18 @@ void *serve_client(void *ptr) {
 		char_count += char_length + 1;
 		
 		//at this point, we have our char array, call video setup now
-		
-		//then call 
+		int response = load_video(movie_string);
+		if(response != 0)
+		{
+			perror("load failed");
+		}
+		create_timer(timer_data);
 		
 		//once video setup is done, formulate response
+		
+		free(movie_string);
+		free(rtsp_format);
+		free(cseq);
 		
 		//for now, assume it's the standard successful scenario
 		char *return_array = (char *)malloc(400);
@@ -187,18 +189,17 @@ void *serve_client(void *ptr) {
 		{
 			perror("send");
 		}
-		
 	}
 	else if(strncmp(control_string,"PLAY",4) == 0)
 	{
 		//get the video name now
 		char_length = get_word_size_double_array(parsed_data, 0, char_count, SPACE);
-		char *movie_string = (char *)malloc(char_length);
+		movie_string = (char *)malloc(char_length);
 		set_word_double_array(parsed_data, movie_string, 0, char_count, char_length);
 		char_count += char_length + 1;
 		//get the rtsp format
 		char_length = get_word_size_double_array(parsed_data, 0, char_count, ENDOFARR);
-		char *rtsp_format = (char *)malloc(char_length);
+		rtsp_format = (char *)malloc(char_length);
 		set_word_double_array(parsed_data, rtsp_format, 0, char_count, char_length);
 		char_count += char_length + 1;
 		
@@ -208,12 +209,12 @@ void *serve_client(void *ptr) {
 		char_count = 0;
 		//This is for CSeq: 
 		char_length = get_word_size_double_array(parsed_data, 1, char_count, SPACE);
-		char_count += char_length;
+		char_count += char_length + 1;
 		//This is for the sequence number
 		char_length = get_word_size_double_array(parsed_data, 1, char_count, ENDOFARR);
-		char *cseq = (char *)malloc(char_length);
+		cseq = (char *)malloc(char_length);
 		set_word_double_array(parsed_data, cseq, 1, char_count, char_length);
-		char_count += char_length;
+		char_count += char_length + 1;//get the video name now
 		
 		//goto third line, get port number
 		
@@ -221,37 +222,48 @@ void *serve_client(void *ptr) {
 		char_count = 0;
 		//This is for the Session:
 		char_length = get_word_size_double_array(parsed_data, 2, char_count, SPACE);
-		char_count += char_length;
+		char_count += char_length + 1;
 		//This is for the session value
 		char_length = get_word_size_double_array(parsed_data, 2, char_count, ENDOFARR);
-		char *session_num = (char *)malloc(char_length);
+		session_num = (char *)malloc(char_length);
 		set_word_double_array(parsed_data, session_num, 2, char_count, char_length);
-		char_count += char_length;
+		char_count += char_length + 1;
 		
 		//reset count
 		char_count = 0;
 		//This is for the Scale:
 		char_length = get_word_size_double_array(parsed_data, 2, char_count, SPACE);
-		char_count += char_length;
+		char_count += char_length + 1;
 		//This is for the Scale value
 		char_length = get_word_size_double_array(parsed_data, 2, char_count, ENDOFARR);
-		char *scale_value = (char *)malloc(char_length);
+		scale_value = (char *)malloc(char_length);
 		set_word_double_array(parsed_data, scale_value, 2, char_count, char_length);
-		char_count += char_length;
+		char_count += char_length + 1;
 		
 		//at this point, we have our char array, call video play now
+		
+		free(movie_string);
+		free(rtsp_format);
+		free(cseq);
+		free(session_num);
+		free(scale_value);
 		
 		//for now, assume it's the standard successful scenario
 		char *return_array = (char *)malloc(400);
 		strcpy(return_array, rtsp_format);
-		strcat(return_array, "200"); // the ok code
-		strcat(return_array, "OK");
-		strcat(return_array, "/n");
+		strcat(return_array, " 200"); // the ok code
+		strcat(return_array, " OK");
+		strcat(return_array, "\n");
 		strcat(return_array, "CSeq: ");
 		strcat(return_array, cseq);
-		strcat(return_array, "/n");
+		strcat(return_array, "\n");
 		strcat(return_array, "Session: ");
 		strcat(return_array, get_session_num());
+		
+		if(send(client_fd, (void *)return_array, 400, 0) < 0)
+		{
+			perror("send");
+		}
 	}
 	else if(strncmp(control_string,"PAUSE",5) == 0)
 	{
@@ -448,12 +460,7 @@ void start_server(int port)
 	}
 }    
 
-// This struct is created to save information that will be needed by the timer,
-// such as socket file descriptors, frame numbers and video captures.
-struct send_frame_data {
-  int socket_fd;
-  // other fields
-};
+
 
 // This function will be called when the timer ticks
 void send_frame(union sigval sv_data) {
@@ -467,51 +474,68 @@ void send_frame(union sigval sv_data) {
   // ...
 }
 
-void create_timer()
+void create_timer(create_timer_data timer_data)
 {
-	// The following snippet is used to create and start a new timer that runs
+	// The following snippet is used to create a new timer that runs
 	// every 40 ms.
-	struct send_frame_data data; // Set fields as necessary
-	struct sigevent play_event;
-	timer_t play_timer;
-	struct itimerspec play_interval;
+	
+	//struct send_frame_data data; // Set fields as necessary
+	//struct sigevent play_event;
+	//timer_t play_timer;
+	//struct itimerspec play_interval;
 
-	memset(&play_event, 0, sizeof(play_event));
-	play_event.sigev_notify = SIGEV_THREAD;
-	play_event.sigev_value.sival_ptr = &data;
-	play_event.sigev_notify_function = send_frame;
+	memset(&(timer_data.play_event), 0, sizeof(timer_data.play_event));
+	timer_data.play_event.sigev_notify = SIGEV_THREAD;
+	timer_data.play_event.sigev_value.sival_ptr = &(timer_data.data);
+	timer_data.play_event.sigev_notify_function = send_frame;
 
-	timer_create(CLOCK_REALTIME, &play_event, &play_timer);
-	start_timer(play_interval, play_timer);
+	timer_create(CLOCK_REALTIME, &(timer_data.play_event), &(timer_data.play_timer));
+	//start_timer(&(timer_data.play_interval), &(timer_data.play_timer));
 	
 	// The following line is used to delete a timer.
-	timer_delete(play_timer);
+	//timer_delete(timer_data.play_timer);
 }
 
-void start_timer(struct itimerspec play_interval, timer_t play_timer)
+void start_timer(struct itimerspec *play_interval, timer_t *play_timer)
 {
-	play_interval.it_interval.tv_sec = 0;
-	play_interval.it_interval.tv_nsec = 40 * 1000000; // 40 ms in ns
-	play_interval.it_value.tv_sec = 0;
-	play_interval.it_value.tv_nsec = 1; // can't be zero
-	timer_settime(play_timer, 0, &play_interval, NULL);
+	play_interval->it_interval.tv_sec = 0;
+	play_interval->it_interval.tv_nsec = 40 * 1000000; // 40 ms in ns
+	play_interval->it_value.tv_sec = 0;
+	play_interval->it_value.tv_nsec = 1; // can't be zero
+	timer_settime(play_timer, 0, play_interval, NULL);
+} 
+
+void stop_timer(struct itimerspec *play_interval, timer_t *play_timer)
+{
+	// The following snippet is used to stop a currently running timer. The current
+	// task is not interrupted, only future tasks are stopped.
+	play_interval->it_interval.tv_sec = 0;
+	play_interval->it_interval.tv_nsec = 0;
+	play_interval->it_value.tv_sec = 0;
+	play_interval->it_value.tv_nsec = 0;
+	timer_settime(play_timer, 0, play_interval, NULL);
 }
 
 
-/*
 
- int load_video(char filename){
+
+ int load_video(char *filename){
  
+ /*
  CvCapture *video;
  
  // Open the video file.
  video = cvCaptureFromFile(filename);
     
     if (!video) {
- // The file doesn't exist or can't be captured as a video file.
- return -1;
+		 // The file doesn't exist or can't be captured as a video file.
+		 return -1;
     }
+	*/
+	return 0;
  }
+ 
+ /*
  
 char[] get_frame(){
     // Obtain the next frame from the video file
