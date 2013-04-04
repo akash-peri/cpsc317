@@ -17,8 +17,18 @@
 #include <cv.h>
 #include <highgui.h>
 
-
+#define ENDOFARR '\0'
 #define NEW_LINE {'\n')
+#define UNKNOWN 0
+#define UNINITIALIZED 1
+#define SETUP 2
+#define PLAY 3
+#define PAUSE 4
+#define TEARDOWN 5
+#define INIT 6
+#define READY 7
+#define PLAYING 8
+
 /*
 #define typedef e_rtsp_requests { \
 SETUP, \
@@ -31,16 +41,8 @@ TEARDOWN, \
 typedef struct send_frame_data {
   int socket_fd;
   int scale;
-  int count;
+  CvCapture *video;
 } send_frame_data;
-
-typedef struct create_timer_data {
-	struct send_frame_data data; // Set fields as necessary
-	struct sigevent play_event;
-	timer_t play_timer;
-	struct itimerspec play_interval;
-	int scale;
-} create_timer_data;
 
 void *serve_client(void *ptr);
 void start_server(int port);
@@ -50,7 +52,9 @@ void set_word_single_array(char *array, char *destination, int start_pos, int ch
 int get_word_size_double_array(char **array, int line, int start_pos, char delimiter);
 int get_word_size_single_array(char *array, int start_pos, char delimiter);
 char* get_session_num();
-void create_timer(create_timer_data timer_data);
-void start_timer(struct itimerspec *play_interval, timer_t *play_timer);
-void stop_timer(struct itimerspec *play_interval, timer_t *play_timer);
-int load_video(char *filename);
+//void create_timer(create_timer_data timer_data);
+void send_frame(union sigval sv_data);
+void start_timer(struct itimerspec play_interval, timer_t play_timer);
+void stop_timer(struct itimerspec play_interval, timer_t play_timer);
+int load_video(char *filename, CvCapture *video);
+char *get_frame(CvCapture *video, int scale);
