@@ -727,9 +727,10 @@ char get_frame(){
     
     //Loop through the jpeg and convert the 2D matrix into a char array of first matrix objects
     int i,j;
-    for (i=0; i<encoded.data; i++) {
-        for (j=0; j<encoded.data; j++) {
-                frames[i] = cvGetReal2D(encoded.data,i,j);
+    for (i=0; i<encoded.data.rows; i++) {
+        for (j=0; j<encoded.data.cols; j++) {
+            //somehow loop through frame array
+                frames[i+j] = cvGetReal2D(encoded.data,i,j);
         }
     }
     return frames;
@@ -739,7 +740,7 @@ char get_frame(){
 
 void close_video(char* filename){
     // Close the video file
-    cvReleaseCapture(filename);
+    cvReleaseCapture(&filename);
 }
 
 
