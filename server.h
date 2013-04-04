@@ -30,7 +30,8 @@ TEARDOWN, \
 
 typedef struct send_frame_data {
   int socket_fd;
-  
+  int scale;
+  int count;
 } send_frame_data;
 
 typedef struct create_timer_data {
@@ -38,6 +39,7 @@ typedef struct create_timer_data {
 	struct sigevent play_event;
 	timer_t play_timer;
 	struct itimerspec play_interval;
+	int scale;
 } create_timer_data;
 
 void *serve_client(void *ptr);

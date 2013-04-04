@@ -165,7 +165,6 @@ void *serve_client(void *ptr) {
 		{
 			perror("load failed");
 		}
-		create_timer(timer_data);
 		
 		//once video setup is done, formulate response
 		
@@ -241,6 +240,17 @@ void *serve_client(void *ptr) {
 		char_count += char_length + 1;
 		
 		//at this point, we have our char array, call video play now
+		//convert scale_value to int; 1 is default
+		int scale = atoi(scale_value);
+		if(scale < 1)
+		{
+			scale = 1;
+		}
+		
+		memset(&timer_data, 0, sizeof(timer_data));
+		timer_data.scale = scale;
+		create_timer(timer_data);
+		start_timer(&(timer_data.play_interval), &(timer_data.play_timer));
 		
 		free(movie_string);
 		free(rtsp_format);
@@ -600,18 +610,31 @@ void start_server(int port)
 		// we then want to start a timer for this pthread
 		//thread
 	}
-}    
-
-
+}
 
 // This function will be called when the timer ticks
 void send_frame(union sigval sv_data) {
   
-  struct send_frame_data *data = (struct send_frame_data *) sv_data.sival_ptr;
-  if(data != NULL)
-  {
-  
-  }
+	struct send_frame_data *data = (struct send_frame_data *) sv_data.sival_ptr;
+	if(data != NULL)
+	{
+		int scale = data->scale;
+		//play every frame
+		if(scale == 1 || data->count == 0)
+		{
+			//get frame, and send
+			data->count++;
+		}
+		//only play frames whose sequence number%scale = 1
+		else
+		{
+			if(data->count % scale == 1)
+			{
+				//get frame and send
+				data->count++;
+			}
+		}
+	}
   // You may retrieve information from the caller using data->field_name
   // ...
 }
@@ -625,7 +648,8 @@ void create_timer(create_timer_data timer_data)
 	//struct sigevent play_event;
 	//timer_t play_timer;
 	//struct itimerspec play_interval;
-
+	timer_data.data.scale = timer_data.scale;
+	
 	memset(&(timer_data.play_event), 0, sizeof(timer_data.play_event));
 	timer_data.play_event.sigev_notify = SIGEV_THREAD;
 	timer_data.play_event.sigev_value.sival_ptr = &(timer_data.data);
@@ -661,19 +685,19 @@ void stop_timer(struct itimerspec *play_interval, timer_t *play_timer)
 
 
 
- int load_video(char *filename){
- 
- /*
- CvCapture *video;
- 
- // Open the video file.
- video = cvCaptureFromFile(filename);
-    
-    if (!video) {
+ int load_video(char *filename)
+ {
+	CvCapture *video;
+	 
+	// Open the video file.
+	video = cvCaptureFromFile(filename);
+		
+	if (!video) 
+	{
 		 // The file doesn't exist or can't be captured as a video file.
 		 return -1;
-    }
-	*/
+	}
+		
 	return 0;
  }
  
