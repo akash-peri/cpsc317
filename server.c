@@ -1,6 +1,9 @@
 #include "server.h"
 
 
+#include <cv.h>
+#include <highgui.h>
+
 #define ALLOWED_CONNECTIONS 5
 #define TRUE 1
 #define FALSE 0
@@ -222,7 +225,11 @@ void *serve_client(void *ptr) {
 		char_count = 0;
 		//This is for the Session:
 		char_length = get_word_size_double_array(parsed_data, 2, char_count, SPACE);
+<<<<<<< HEAD
 		char_count += char_length + 1;
+=======
+		char_count += char_length;
+>>>>>>> Update
 		//This is for the session value
 		char_length = get_word_size_double_array(parsed_data, 2, char_count, ENDOFARR);
 		session_num = (char *)malloc(char_length);
@@ -534,9 +541,15 @@ void stop_timer(struct itimerspec *play_interval, timer_t *play_timer)
 	*/
 	return 0;
  }
+<<<<<<< HEAD
  
  /*
  
+=======
+
+
+//timer needs to check if the return frame is NULL. NULL at end of frames.
+>>>>>>> Update
 char[] get_frame(){
     // Obtain the next frame from the video file
     
@@ -573,5 +586,3 @@ void close_video(char* filename){
     cvReleaseCapture(&filename);
 }
 
-
-*/
