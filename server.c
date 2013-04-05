@@ -22,6 +22,7 @@ void *serve_client(void *ptr) {
 	
 	char *data = (char *)malloc(1024*sizeof(char));
 	char **parsed_data = (char **)malloc(5*sizeof(char*));
+	memset(parsed_data, 0, 5*sizeof(char*));
 	char *count = (char *)malloc(5*sizeof(int));
 	if(parsed_data)
 	{
@@ -29,6 +30,7 @@ void *serve_client(void *ptr) {
 		for(j = 0; j < 4; j++)
 		{
 			parsed_data[j] = (char *)malloc(256);
+			memset(parsed_data[j], 0, 256);
 		}
 	}
 		
@@ -83,7 +85,7 @@ void *serve_client(void *ptr) {
 		int j;
 		for(j = 0; j < 4; j++)
 		{
-			parsed_data[j] = (char *) realloc (parsed_data[j], count[j]*sizeof(parsed_data[0][0]));
+			//parsed_data[j] = (char *) realloc (parsed_data[j], count[j]*sizeof(parsed_data[0][0]));
 		}
 	}
 	free(count);
@@ -214,13 +216,14 @@ void *serve_client(void *ptr) {
 				//once video setup is done, formulate response
 
 				//for now, assume it's the standard successful scenario
+				//int size = sizeof(&rdi.rtsp_format) + sizeof(&rdi.cseq) + sizeof(&rdi.session) + sizeof(&rdi.return_code) + sizeof(&rdi.return_msg) + 1;
 				char *return_array = (char *)malloc(400);
 				rdi.rtsp_format = rtsp_format;
 				rdi.cseq = cseq;
 				rdi.session = get_session_num();
 				get_response(return_array, SETUP, rdi);
 				
-				if(send(client_fd, (void *)return_array, 400, 0) < 0)
+				if(send(client_fd, (void *)return_array, sizeof(return_array), 0) < 0)
 				{
 					perror("send");
 				}
@@ -301,15 +304,15 @@ void *serve_client(void *ptr) {
 			start_timer(play_interval, play_timer);
 			state_of_client = PLAYING;
 			
-			//for now, assume it's the standard successful scenario
-			char *return_array = (char *)malloc(400);
+			int size = sizeof(&rdi.rtsp_format) + sizeof(&rdi.cseq) + sizeof(&rdi.session) + sizeof(&rdi.return_code) + sizeof(&rdi.return_msg) + 1;
+			char *return_array = (char *)malloc(size);
 			rdi.rtsp_format = rtsp_format;
 			rdi.cseq = cseq;
 			rdi.session = session_num;
 			get_response(return_array, SETUP, rdi);
 			
 			printf("Testing");
-			if(send(client_fd, (void *)return_array, 400, 0) < 0)
+			if(send(client_fd, (void *)return_array, size, 0) < 0)
 			{
 				perror("send");
 			}
@@ -483,6 +486,7 @@ void *serve_client(void *ptr) {
 		}
 		free(control_string);
 	}
+	free(parsed_data);
   }
   return (void*)0;
 }
@@ -561,7 +565,9 @@ void set_word_single_array(char *array, char *destination, int start_pos, int ch
 
 char* get_response(char *return_array, int state, response_data rdi)
 {
+
 	perror("Work maybe?");
+	
 	strcpy(return_array, rdi.rtsp_format);
 	strcat(return_array, rdi.return_code); // the ok code
 	strcat(return_array, rdi.return_msg);
@@ -576,8 +582,9 @@ char* get_response(char *return_array, int state, response_data rdi)
 	//}
 	strcat(return_array, "\n");
 	strcat(return_array, "\n");
-	return return_array;
 	perror("Looks good");
+	
+	return return_array;
 }
 
 void start_server(int port)
@@ -681,6 +688,7 @@ void send_frame(union sigval sv_data) {
 	struct send_frame_data *data = (struct send_frame_data *) sv_data.sival_ptr;
 	if(data != NULL)
 	{
+	/*
 		CvMat *encoded = get_encoded(data->video, data->scale);
 			//need to get array size
 		
@@ -700,6 +708,7 @@ void send_frame(union sigval sv_data) {
 		
 		}
 		free(frame);
+		*/
 		
 		//assemble streaming info
 		char *rtsp_prefix = malloc(8);
