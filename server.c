@@ -216,14 +216,13 @@ void *serve_client(void *ptr) {
 				//once video setup is done, formulate response
 
 				//for now, assume it's the standard successful scenario
-				//int size = sizeof(&rdi.rtsp_format) + sizeof(&rdi.cseq) + sizeof(&rdi.session) + sizeof(&rdi.return_code) + sizeof(&rdi.return_msg) + 1;
-				char *return_array = (char *)malloc(400);
+                char *return_array = (char *)malloc(400);
 				rdi.rtsp_format = rtsp_format;
 				rdi.cseq = cseq;
 				rdi.session = get_session_num();
 				get_response(return_array, SETUP, rdi);
 				
-				if(send(client_fd, (void *)return_array, sizeof(return_array), 0) < 0)
+				if(send(client_fd, (void *)return_array, strlen(return_array), 0) < 0)
 				{
 					perror("send");
 				}
@@ -304,15 +303,14 @@ void *serve_client(void *ptr) {
 			start_timer(play_interval, play_timer);
 			state_of_client = PLAYING;
 			
-			int size = sizeof(&rdi.rtsp_format) + sizeof(&rdi.cseq) + sizeof(&rdi.session) + sizeof(&rdi.return_code) + sizeof(&rdi.return_msg) + 1;
-			char *return_array = (char *)malloc(size);
+            char *return_array = (char *)malloc(400);
 			rdi.rtsp_format = rtsp_format;
 			rdi.cseq = cseq;
 			rdi.session = session_num;
 			get_response(return_array, SETUP, rdi);
 			
 			printf("Testing");
-			if(send(client_fd, (void *)return_array, size, 0) < 0)
+			if(send(client_fd, (void *)return_array, strlen(return_array), 0) < 0)
 			{
 				perror("send");
 			}
@@ -398,7 +396,7 @@ void *serve_client(void *ptr) {
 			rdi.session = session_num;
 			get_response(return_array, SETUP, rdi);
 			
-			if(send(client_fd, (void *)return_array, 400, 0) < 0)
+			if(send(client_fd, (void *)return_array, strlen(return_array), 0) < 0)
 			{
 				perror("send");
 			}
@@ -475,7 +473,7 @@ void *serve_client(void *ptr) {
 			rdi.session = session_num;
 			get_response(return_array, SETUP, rdi);
 			
-			if(send(client_fd, (void *)return_array, 400, 0) < 0)
+			if(send(client_fd, (void *)return_array, strlen(return_array), 0) < 0)
 			{
 				perror("send");
 			}
@@ -688,7 +686,7 @@ void send_frame(union sigval sv_data) {
 	struct send_frame_data *data = (struct send_frame_data *) sv_data.sival_ptr;
 	if(data != NULL)
 	{
-	/*
+	
 		CvMat *encoded = get_encoded(data->video, data->scale);
 			//need to get array size
 		
@@ -708,7 +706,7 @@ void send_frame(union sigval sv_data) {
 		
 		}
 		free(frame);
-		*/
+		
 		
 		//assemble streaming info
 		char *rtsp_prefix = malloc(8);
