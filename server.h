@@ -74,5 +74,5 @@ void send_frame(union sigval sv_data);
 void start_timer(struct itimerspec play_interval, timer_t play_timer);
 void stop_timer(struct itimerspec play_interval, timer_t play_timer);
 int load_video(char *filename, CvCapture *video);
-char *get_frame(CvCapture *video, int scale);
+CvMat* get_encoded(CvCapture *video, int scale);
 char* get_response(char *return_array, int state, response_data rdi);

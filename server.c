@@ -681,11 +681,25 @@ void send_frame(union sigval sv_data) {
 	struct send_frame_data *data = (struct send_frame_data *) sv_data.sival_ptr;
 	if(data != NULL)
 	{
-		char *frame = get_frame(data->video, data->scale);
+		CvMat *encoded = get_encoded(data->video, data->scale);
+			//need to get array size
+		
+		int rows = encoded->rows;
+		int cols = encoded->cols;
+		char *frame = malloc(sizeof(int)*rows*cols);
+		//Loop through the jpeg and convert the 2D matrix into a char array of first matrix objects
+		int i,j;
+		for (i=0; i<rows; i++) {
+			for (j=0; j<cols; j++) {
+				frame[i*j+j] = cvGetReal2D(encoded,i,j);
+			}
+		}
+		
 		if(frame != NULL)
 		{
 		
 		}
+		free(frame);
 		
 		//assemble streaming info
 		char *rtsp_prefix = malloc(8);
@@ -744,7 +758,7 @@ int load_video(char *filename, CvCapture *video)
  
  
 //timer needs to check if the return frame is NULL. NULL at end of frames.
-char *get_frame(CvCapture *video, int scale){
+CvMat* get_encoded(CvCapture *video, int scale){
     // Obtain the next frame from the video file
     
     IplImage *image;
@@ -766,19 +780,7 @@ char *get_frame(CvCapture *video, int scale){
     const static int encodeParams[] = { CV_IMWRITE_JPEG_QUALITY, 100 };
     encoded = cvEncodeImage(".jpeg", image, encodeParams);
     
-	//need to get array size
-	int rows = encoded->rows;
-	int cols = encoded->cols;
-    char *frames = malloc(sizeof(int)*rows*cols);
-	
-    //Loop through the jpeg and convert the 2D matrix into a char array of first matrix objects
-    int i,j;
-    for (i=0; i<rows; i++) {
-        for (j=0; j<cols; j++) {
-                frames[i*j+j] = cvGetReal2D(encoded,i,j);
-        }
-    }
-    return frames;
+	return encoded;
 }
 
 void close_video(CvCapture* video){
