@@ -20,7 +20,7 @@ void *serve_client(void *ptr) {
   {
 	//if data in socket
 	
-	char *data = (char *)malloc(4096*sizeof(char));
+	char *data = (char *)malloc(1024*sizeof(char));
 	char **parsed_data = (char **)malloc(5*sizeof(char*));
 	char *count = (char *)malloc(5*sizeof(int));
 	if(parsed_data)
@@ -28,7 +28,7 @@ void *serve_client(void *ptr) {
 		int j = 0;
 		for(j = 0; j < 4; j++)
 		{
-			parsed_data[j] = (char *)malloc(1024);
+			parsed_data[j] = (char *)malloc(256);
 		}
 	}
 		
@@ -38,15 +38,16 @@ void *serve_client(void *ptr) {
 	while(done == 0)
 	{
 		valid = 1;
-		int read_size = (int) recv(client_fd, data, 4096, 0);
+		int read_size = (int) recv(client_fd, data, 1024, 0);
+		//int read_size = (int) read(client_fd, data, 4096);
 		if(read_size < 0)
 		{
-			perror ("read failed");
+			//perror ("read failed");
 		}
-		perror ("test");
+		//perror ("test");
 		//parse data now
 		
-		if(read_size < 4096)
+		if(read_size < 1024)
 		{
 			done = TRUE; // nothing else to read this time
 		}
@@ -85,11 +86,12 @@ void *serve_client(void *ptr) {
 			parsed_data[j] = (char *) realloc (parsed_data[j], count[j]*sizeof(parsed_data[0][0]));
 		}
 	}
+	free(count);
 	
 	//if it doesnt end with a new line, invalid response
 	if(!valid || ((line_counter == 0) && ((parsed_data[line_counter] == NULL) || (parsed_data[line_counter][0] == '\0'))))
 	{
-		perror("the request wasnt formulated properly");
+		//perror("the request wasnt formulated properly");
 	}
 	else
 	{
@@ -117,6 +119,7 @@ void *serve_client(void *ptr) {
 		struct sigevent play_event;
 		timer_t play_timer;
 		struct itimerspec play_interval;
+		struct response_data rdi;
 		//int scale;
 		//CvCapture *video;
 		
@@ -189,10 +192,13 @@ void *serve_client(void *ptr) {
 				//at this point, we have our char array, call video setup now
 				CvCapture *video = NULL;
 				int response = load_video(movie_string, video);
-				
+				rdi.return_code = SUCCESS;
+				rdi.return_msg = SUCCESS_MSG;
 				if(response != 0)
 				{
 					perror("load failed");
+					rdi.return_code = NOT_FOUND;
+					rdi.return_msg = NOT_FOUND_MSG;
 				}
 				data.video = video;
 
@@ -209,28 +215,24 @@ void *serve_client(void *ptr) {
 
 				//for now, assume it's the standard successful scenario
 				char *return_array = (char *)malloc(400);
-				strcpy(return_array, rtsp_format);
-				strcat(return_array, " 200"); // the ok code
-				strcat(return_array, " OK");
-				strcat(return_array, "\n");
-				strcat(return_array, "CSeq: ");
-				strcat(return_array, cseq);
-				strcat(return_array, "\n");
-				strcat(return_array, "Session: ");
-				strcat(return_array, get_session_num());
-				strcat(return_array, "\n");
-				strcat(return_array, "\n");
+				rdi.rtsp_format = rtsp_format;
+				rdi.cseq = cseq;
+				rdi.session = get_session_num();
+				get_response(return_array, SETUP, rdi);
+				
 				if(send(client_fd, (void *)return_array, 400, 0) < 0)
 				{
 					perror("send");
 				}
+				
 				free(return_array);
 				free(movie_string);
 				free(rtsp_format);
 				free(cseq);
+				free(transport_type);
+				free(interleaved_string);
+				free(startpos_string);
 			}
-			
-			
 		}
 		else if(strncmp(control_string,"PLAY",4) == 0)
 		{
@@ -301,20 +303,17 @@ void *serve_client(void *ptr) {
 			
 			//for now, assume it's the standard successful scenario
 			char *return_array = (char *)malloc(400);
-			strcpy(return_array, rtsp_format);
-			strcat(return_array, " 200"); // the ok code
-			strcat(return_array, " OK");
-			strcat(return_array, "\n");
-			strcat(return_array, "CSeq: ");
-			strcat(return_array, cseq);
-			strcat(return_array, "\n");
-			strcat(return_array, "Session: ");
-			strcat(return_array, get_session_num());
+			rdi.rtsp_format = rtsp_format;
+			rdi.cseq = cseq;
+			rdi.session = session_num;
+			get_response(return_array, SETUP, rdi);
 			
+			printf("Testing");
 			if(send(client_fd, (void *)return_array, 400, 0) < 0)
 			{
 				perror("send");
 			}
+			printf("Success");
 			
 			free(return_array);
 			free(movie_string);
@@ -391,16 +390,10 @@ void *serve_client(void *ptr) {
 			
 			//for now, assume it's the standard successful scenario
 			char *return_array = (char *)malloc(400);
-			strcpy(return_array, rtsp_format);
-			strcat(return_array, " 200"); // the ok code
-			strcat(return_array, " OK");
-			strcat(return_array, "\n");
-			strcat(return_array, "CSeq: ");
-			strcat(return_array, cseq);
-			strcat(return_array, "\n");
-			strcat(return_array, "Session: ");
-			strcat(return_array, get_session_num());
-			free(return_array);
+			rdi.rtsp_format = rtsp_format;
+			rdi.cseq = cseq;
+			rdi.session = session_num;
+			get_response(return_array, SETUP, rdi);
 			
 			if(send(client_fd, (void *)return_array, 400, 0) < 0)
 			{
@@ -474,16 +467,10 @@ void *serve_client(void *ptr) {
 			
 			//for now, assume it's the standard successful scenario
 			char *return_array = (char *)malloc(400);
-			strcpy(return_array, rtsp_format);
-			strcat(return_array, " 200"); // the ok code
-			strcat(return_array, " OK");
-			strcat(return_array, "\n");
-			strcat(return_array, "CSeq: ");
-			strcat(return_array, cseq);
-			strcat(return_array, "\n");
-			strcat(return_array, "Session: ");
-			strcat(return_array, get_session_num());
-			free(return_array);
+			rdi.rtsp_format = rtsp_format;
+			rdi.cseq = cseq;
+			rdi.session = session_num;
+			get_response(return_array, SETUP, rdi);
 			
 			if(send(client_fd, (void *)return_array, 400, 0) < 0)
 			{
@@ -572,6 +559,27 @@ void set_word_single_array(char *array, char *destination, int start_pos, int ch
 	destination[j]='\0';
 }
 
+char* get_response(char *return_array, int state, response_data rdi)
+{
+	perror("Work maybe?");
+	strcpy(return_array, rdi.rtsp_format);
+	strcat(return_array, rdi.return_code); // the ok code
+	strcat(return_array, rdi.return_msg);
+	//if(strncmp(rdi.return_code, SUCCESS, 4) == 0)
+	//{
+		strcat(return_array, "\n");
+		strcat(return_array, "CSeq: ");
+		strcat(return_array, rdi.cseq);
+		strcat(return_array, "\n");
+		strcat(return_array, "Session: ");
+		strcat(return_array, rdi.session);
+	//}
+	strcat(return_array, "\n");
+	strcat(return_array, "\n");
+	return return_array;
+	perror("Looks good");
+}
+
 void start_server(int port)
 {
 
@@ -630,9 +638,9 @@ void start_server(int port)
 	
 	//Print out info on server host and port number
 	
-	char hostname[1024];
-	hostname[1023] = '\0';
-	gethostname(hostname, 1024);
+	char hostname[256];
+	hostname[256] = '\0';
+	gethostname(hostname, 256);
 	printf("Hostname: %s\n", hostname);
 	printf("Portnum: %s\n", server_port);
 	freeaddrinfo(addr_info); 
@@ -643,11 +651,19 @@ void start_server(int port)
 	while(true)
 	{
 		socklen_t addr_size = sizeof(client_addr_info);
-		int accept_con = accept(sfd, (struct sockaddr *)&client_addr_info, &addr_size);
-		if(accept_con < 0)
-		{
-			perror ("accept failed");
-		}
+		int accept_con;
+		again: 
+			{
+				accept_con = accept(sfd, (struct sockaddr *)&client_addr_info, &addr_size);
+				if(accept_con < 0)
+				{
+					if(errno == EINTR)
+					{
+						goto again;
+					}
+					perror ("accept failed");
+				}
+			}
 		// Required variables
 		pthread_t thread; // Thread to be created
 		// Creates the thread and calls the function serve_client.
@@ -683,6 +699,11 @@ void send_frame(union sigval sv_data) {
 		strcat(rtsp_prefix, rtsp_interleave); //4 bytes, should be
 		strcat(rtsp_prefix, zero);//1 byte
 		strcat(rtsp_prefix, rtsp_size);//2 byte, should be
+		
+		free(rtsp_prefix);
+		free(rtsp_interleave);
+		free(zero);
+		free(rtsp_size);
 		//assemble header info
 	}
 }

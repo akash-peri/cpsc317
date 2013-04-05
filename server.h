@@ -16,6 +16,9 @@
 #include <arpa/inet.h>
 #include <cv.h>
 #include <highgui.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
 
 #define ENDOFARR '\0'
 #define NEW_LINE {'\n')
@@ -28,6 +31,11 @@
 #define INIT 6
 #define READY 7
 #define PLAYING 8
+
+#define SUCCESS " 200"
+#define SUCCESS_MSG " OK"
+#define NOT_FOUND " 404"
+#define NOT_FOUND_MSG " Not Found"
 
 /*
 #define typedef e_rtsp_requests { \
@@ -44,6 +52,15 @@ typedef struct send_frame_data {
   CvCapture *video;
 } send_frame_data;
 
+typedef struct response_data
+{
+	char *rtsp_format;
+	char *return_code;
+	char *return_msg;
+	char *cseq;
+	char *session;
+} response_data;
+
 void *serve_client(void *ptr);
 void start_server(int port);
 char* get_session_num();
@@ -58,3 +75,4 @@ void start_timer(struct itimerspec play_interval, timer_t play_timer);
 void stop_timer(struct itimerspec play_interval, timer_t play_timer);
 int load_video(char *filename, CvCapture *video);
 char *get_frame(CvCapture *video, int scale);
+char* get_response(char *return_array, int state, response_data rdi);
