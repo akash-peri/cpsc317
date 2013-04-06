@@ -25,7 +25,8 @@ all: rtspd cloudrtspd
 # (CC variable above) with LDFLAGS and LDLIBS.
 rtspd: server.o main.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
-cloudrtspd: cloud_server.o main.o
+cloudrtspd: cloud_server.o cloud_helper.o main.o
+	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 # This rule indicates that server.o depends on server.c and server.h,
 # and so on. Although the gcc command will not include server.h, you
@@ -36,7 +37,7 @@ cloudrtspd: cloud_server.o main.o
 # create the file, a default rule is used, which calls the compiler
 # (CC variable above) with CFLAGS.
 server.o: server.c server.h
-cloud_server.o: cloud_server.c server.h
+cloud_server.o: cloud_server.c cloud_server.h cloud_helper.h
 main.o: main.c server.h
 
 # A clean rule is a good practice to simplify the removal of all
