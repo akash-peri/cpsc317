@@ -46,7 +46,6 @@ void *serve_client(void *ptr) {
 		{
 			//perror ("read failed");
 		}
-		//perror ("test");
 		//parse data now
 		
 		if(read_size < 1024)
@@ -109,7 +108,6 @@ void *serve_client(void *ptr) {
 		
 		
 		char SPACE = ' ';
-		//char NEWLINE = '\n';
 		
 		int char_length = get_word_size_double_array(parsed_data, 0, 0, SPACE);
 		int char_count = 0;
@@ -132,8 +130,7 @@ void *serve_client(void *ptr) {
 		timer_t play_timer;
 		struct itimerspec play_interval;
 		struct response_data rdi;
-		//int scale;
-		//CvCapture *video;
+		
 		
 		if(strncmp(control_string,"SETUP",5) == 0)
 		//control string can be SETUP, PLAY, PAUSE, TEARDOWN
@@ -386,19 +383,6 @@ void *serve_client(void *ptr) {
 			session_num = (char *)malloc(char_length);
 			set_word_double_array(parsed_data, session_num, 2, char_count, char_length);
 			char_count += char_length + 1;
-			
-			/*
-			//reset count
-			char_count = 0;
-			//This is for the Scale:
-			char_length = get_word_size_double_array(parsed_data, 2, char_count, SPACE);
-			char_count += char_length + 1;
-			//This is for the Scale value
-			char_length = get_word_size_double_array(parsed_data, 2, char_count, ENDOFARR);
-			scale_value = (char *)malloc(char_length);
-			set_word_double_array(parsed_data, scale_value, 2, char_count, char_length);
-			char_count += char_length + 1;
-			*/
 
 			data.cseq = atoi(cseq);
 			//at this point, we have our char array, call video pause now
@@ -423,7 +407,7 @@ void *serve_client(void *ptr) {
 			free(rtsp_format);
 			free(cseq);
 			free(session_num);
-			//free(scale_value);
+            
 		}
 		else if(strncmp(control_string,"TEARDOWN",8) == 0)
 		{
@@ -482,7 +466,8 @@ void *serve_client(void *ptr) {
 			char_count += char_length + 1;
 			
 			//at this point, we have our char array, call video teardown now
-			state_of_client = INIT;
+			stop_timer(play_interval, play_timer);
+            state_of_client = INIT;
 			
 			//for now, assume it's the standard successful scenario
 			char *return_array = (char *)malloc(400);
@@ -606,27 +591,18 @@ void set_word_single_array(char *array, char *destination, int start_pos, int ch
 char* get_response(char *return_array, int state, response_data rdi)
 {
 
-	perror("Work maybe?");
-	
+    if(state){}
 	strcpy(return_array, rdi.rtsp_format);
 	strcat(return_array, rdi.return_code); // the ok code
 	strcat(return_array, rdi.return_msg);
-	if(state == SETUP)
-	{
-	
-	}
-	//if(strncmp(rdi.return_code, SUCCESS, 4) == 0)
-	//{
-		strcat(return_array, "\n");
-		strcat(return_array, "CSeq: ");
-		strcat(return_array, rdi.cseq);
-		strcat(return_array, "\n");
-		strcat(return_array, "Session: ");
-		strcat(return_array, rdi.session);
-	//}
+    strcat(return_array, "\n");
+    strcat(return_array, "CSeq: ");
+    strcat(return_array, rdi.cseq);
+    strcat(return_array, "\n");
+    strcat(return_array, "Session: ");
+    strcat(return_array, rdi.session);
 	strcat(return_array, "\n");
 	strcat(return_array, "\n");
-	perror("Looks good");
 	
 	return return_array;
 }
@@ -640,7 +616,6 @@ void start_server(int port)
 //once accept returns, we call code below, then recall accept (it should be in some kind of loop)
 
 	char *server_port = malloc(sizeof(int)*8+1);
-	//itoa(port,server_port,10);
 	sprintf(server_port,"%d",port);
 	int sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	struct addrinfo *addr_info, *rp;
@@ -777,9 +752,6 @@ void send_frame(union sigval sv_data) {
 			//12-15 not needed
 			
 			char *return_array = malloc(16+cols);
-			//strcat(return_array, rtsp_prefix);
-			//memcpy(return_array+16,encoded->data.ptr,cols);
-			//strcat(return_array, encoded);
 			
 			if(send(data->socket_fd, (void *)rtsp_prefix, 16, 0) < 0)
 			{
@@ -852,16 +824,17 @@ CvMat* get_encoded(CvCapture *video, int scale){
     
     IplImage *image;
     CvMat *encoded;
-	
+    
 	if(scale > 1)
 	{
 		int j;
 		for(j = 0; j < scale - 1; j++)
 		{
-			cvGrabFrame(video);
+			cvQueryFrame(video);
 		}
 	}
 	
+    
     image = cvQueryFrame(video);
     if (!image) {
         // Next frame doesn't exist or can't be obtained.
@@ -871,13 +844,6 @@ CvMat* get_encoded(CvCapture *video, int scale){
 	// Convert the frame to a smaller size (WIDTH x HEIGHT)
 	CvMat *thumb = cvCreateMat(360, 480, CV_8UC3);
 	cvResize(image, thumb, CV_INTER_AREA);
-    
-	
-	//if scale > 1, moves frames forward to reflect that
-	//int frameNum = cvGetCaptureProperty(video, CV_CAP_PROP_POS_FRAMES);
-    // Position the video at a specific frame number position
-    //cvSetCaptureProperty(video, CV_CAP_PROP_POS_FRAMES, frameNum + scale - 1);
-    
     
     // Encode the frame in JPEG format with JPEG quality 100%.
     const int encodeParams[] = { CV_IMWRITE_JPEG_QUALITY, 30 };
