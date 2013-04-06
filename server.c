@@ -646,7 +646,13 @@ int get_word_size_single_array(char *array, int start_pos, char delimiter)
 //randomize
 char* get_session_num()
 {
-	return "123456";
+	char *randnum = (char *)malloc(10);
+    
+    int random = rand() % 1000000 + 1;
+    sprintf(randnum,"%d",random);
+    return randnum;
+    free(randnum);
+
 }
 	
 void set_word_double_array(char **array, char *destination, int line, int start_pos, int char_count)

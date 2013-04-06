@@ -20,6 +20,7 @@
 #include <fcntl.h>
 #include <errno.h>
 
+
 #define ENDOFARR '\0'
 #define NEW_LINE {'\n'}
 #define UNKNOWN 0
