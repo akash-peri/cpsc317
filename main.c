@@ -8,15 +8,15 @@ int port_number;
 int main(int argc, char **argv)
 {
     printf("This is output from my first program!\n");
-	/*
-	if(argc != 1)
+	
+	if(argc != 1 || argv == NULL)
 	{
-		return 1;
+		//return 1;
 	}
 	
-	port_number = atoi(argv[1]);
-	start_server(port_number);
-	*/
+	//port_number = atoi(argv[1]);
+	//start_server(port_number);
+	
 	start_server(12346);
 	
 	//scanf("%i", portNumber);

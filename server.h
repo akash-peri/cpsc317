@@ -21,7 +21,7 @@
 #include <errno.h>
 
 #define ENDOFARR '\0'
-#define NEW_LINE {'\n')
+#define NEW_LINE {'\n'}
 #define UNKNOWN 0
 #define UNINITIALIZED 1
 #define SETUP 2
@@ -50,6 +50,12 @@ typedef struct send_frame_data {
   int socket_fd;
   int scale;
   CvCapture *video;
+  int timestamp_start;
+  int send_count;
+  int cseq;
+  int done;
+  struct itimerspec play_interval;
+  timer_t play_timer;
 } send_frame_data;
 
 typedef struct response_data
@@ -73,6 +79,6 @@ char* get_session_num();
 void send_frame(union sigval sv_data);
 void start_timer(struct itimerspec play_interval, timer_t play_timer);
 void stop_timer(struct itimerspec play_interval, timer_t play_timer);
-int load_video(char *filename, CvCapture *video);
 CvMat* get_encoded(CvCapture *video, int scale);
 char* get_response(char *return_array, int state, response_data rdi);
+int sendall(int s, char *buf, int len);

@@ -10,7 +10,7 @@ CC = gcc
 # treated as errors. Although you may remove these flags so that your
 # code compiles, you are strongly encouraged to fix the warnings
 # instead, since they often lead to unexpected runtime errors.
-CFLAGS = -Wall -Werror -g $(shell pkg-config --cflags opencv)
+CFLAGS = -Wall -Werror -Wextra -g $(shell pkg-config --cflags opencv)
 LDFLAGS = -Wall -Werror -g -pthread
 LDLIBS = -lrt -lm $(shell pkg-config --libs opencv)
 
