@@ -77,11 +77,9 @@ void set_word_double_array(char **array, char *destination, int line, int start_
 void set_word_single_array(char *array, char *destination, int start_pos, int char_count);
 int get_word_size_double_array(char **array, int line, int start_pos, char delimiter);
 int get_word_size_single_array(char *array, int start_pos, char delimiter);
-char* get_session_num();
-//void create_timer(create_timer_data timer_data);
 void send_frame(union sigval sv_data);
 void start_timer(struct itimerspec play_interval, timer_t play_timer);
 void stop_timer(struct itimerspec play_interval, timer_t play_timer);
 CvMat* get_encoded(CvCapture *video, int scale);
-char* get_response(char *return_array, int state, response_data rdi);
+char* get_response(char *return_array, response_data rdi);
 int sendall(int s, char *buf, int len);

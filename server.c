@@ -205,7 +205,7 @@ void *serve_client(void *ptr) {
 				rdi.session = get_session_num();
                 rdi.return_code = INVALID_STATE;
 				rdi.return_msg = INVALID_STATE_MSG;
-				get_response(return_array, SETUP, rdi);
+				get_response(return_array, rdi);
 				
 				if(send(client_fd, (void *)return_array, strlen(return_array), 0) < 0)
 				{
@@ -249,7 +249,7 @@ void *serve_client(void *ptr) {
 				rdi.rtsp_format = rtsp_format;
 				rdi.cseq = cseq;
 				rdi.session = get_session_num();
-				get_response(return_array, SETUP, rdi);
+				get_response(return_array, rdi);
 				
 				if(send(client_fd, (void *)return_array, strlen(return_array), 0) < 0)
 				{
@@ -330,7 +330,7 @@ void *serve_client(void *ptr) {
                 rdi.session = session_num;
                 rdi.return_code = SUCCESS;
                 rdi.return_msg = SUCCESS_MSG;
-                get_response(return_array, SETUP, rdi);
+                get_response(return_array, rdi);
                 
                 if(send(client_fd, (void *)return_array, strlen(return_array), 0) < 0)
                 {
@@ -350,7 +350,7 @@ void *serve_client(void *ptr) {
 				rdi.session = get_session_num();
                 rdi.return_code = INVALID_STATE;
 				rdi.return_msg = INVALID_STATE_MSG;
-				get_response(return_array, SETUP, rdi);
+				get_response(return_array, rdi);
 				
 				if(send(client_fd, (void *)return_array, strlen(return_array), 0) < 0)
 				{
@@ -384,7 +384,7 @@ void *serve_client(void *ptr) {
 			rdi.session = session_num;
 			rdi.return_code = SUCCESS;
 			rdi.return_msg = SUCCESS_MSG;
-			get_response(return_array, PLAY, rdi);
+			get_response(return_array, rdi);
 			return_array = realloc(return_array, strlen(return_array));
 			
 			if(send(client_fd, (void *)return_array, strlen(return_array), 0) < 0)
@@ -451,7 +451,7 @@ void *serve_client(void *ptr) {
 				rdi.session = get_session_num();
                 rdi.return_code = INVALID_STATE;
 				rdi.return_msg = INVALID_STATE_MSG;
-				get_response(return_array, SETUP, rdi);
+				get_response(return_array, rdi);
 				
 				if(send(client_fd, (void *)return_array, strlen(return_array), 0) < 0)
 				{
@@ -476,7 +476,7 @@ void *serve_client(void *ptr) {
 			rdi.session = session_num;
 			rdi.return_code = SUCCESS;
 			rdi.return_msg = SUCCESS_MSG;
-			get_response(return_array, SETUP, rdi);
+			get_response(return_array, rdi);
 			
 			if(send(client_fd, (void *)return_array, strlen(return_array), 0) < 0)
 			{
@@ -552,7 +552,7 @@ void *serve_client(void *ptr) {
 				rdi.session = get_session_num();
                 rdi.return_code = INVALID_STATE;
 				rdi.return_msg = INVALID_STATE_MSG;
-				get_response(return_array, SETUP, rdi);
+				get_response(return_array, rdi);
 				
 				if(send(client_fd, (void *)return_array, strlen(return_array), 0) < 0)
 				{
@@ -574,7 +574,7 @@ void *serve_client(void *ptr) {
 			rdi.session = session_num;
 			rdi.return_code = SUCCESS;
 			rdi.return_msg = SUCCESS_MSG;
-			get_response(return_array, SETUP, rdi);
+			get_response(return_array, rdi);
 			
 			if(send(client_fd, (void *)return_array, strlen(return_array), 0) < 0)
 			{
@@ -694,10 +694,9 @@ void set_word_single_array(char *array, char *destination, int start_pos, int ch
 	destination[j]='\0';
 }
 
-char* get_response(char *return_array, int state, response_data rdi)
+char* get_response(char *return_array, response_data rdi)
 {
 
-    if(state){}
 	strcpy(return_array, rdi.rtsp_format);
 	strcat(return_array, rdi.return_code); // the ok code
 	strcat(return_array, rdi.return_msg);
