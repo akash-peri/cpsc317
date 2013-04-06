@@ -36,6 +36,8 @@
 #define SUCCESS_MSG " OK"
 #define NOT_FOUND " 404"
 #define NOT_FOUND_MSG " Not Found"
+#define INVALID_STATE " 455"
+#define INVALID_STATE_MSG " Method Not Valid in This State"
 
 /*
 #define typedef e_rtsp_requests { \

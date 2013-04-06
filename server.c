@@ -135,14 +135,7 @@ void *serve_client(void *ptr) {
 		if(strncmp(control_string,"SETUP",5) == 0)
 		//control string can be SETUP, PLAY, PAUSE, TEARDOWN
 		{
-			//check state first to see if we need to discard anything
 			
-			if(state_of_client != INIT && state_of_client != UNINITIALIZED)
-			{
-				perror("Setup can not be called in this state");
-			}
-			else
-			{
 				//get the video name now
 				char_length = get_word_size_double_array(parsed_data, 0, char_count, SPACE);
 				movie_string = (char *)malloc(char_length);
@@ -198,6 +191,32 @@ void *serve_client(void *ptr) {
 				set_word_single_array(interleaved_string, startpos_string, char_count, char_length);
 				char_count += char_length + 1;
 				
+            
+            
+            //check state first to see if we need to discard anything
+			
+			if(state_of_client != INIT && state_of_client != UNINITIALIZED)
+			{
+				perror("Setup can not be called in this state");
+                char *return_array = (char *)malloc(400);
+                
+                rdi.rtsp_format = rtsp_format;
+				rdi.cseq = cseq;
+				rdi.session = get_session_num();
+                rdi.return_code = INVALID_STATE;
+				rdi.return_msg = INVALID_STATE_MSG;
+				get_response(return_array, SETUP, rdi);
+				
+				if(send(client_fd, (void *)return_array, strlen(return_array), 0) < 0)
+				{
+					perror("send");
+				}
+				
+				free(return_array);
+            
+			}
+			else
+			{
 				//at this point, we have our char array, call video setup now
 				CvCapture *video = NULL;
 				//int response = load_video(movie_string, video);
@@ -238,6 +257,7 @@ void *serve_client(void *ptr) {
 				}
 				
 				free(return_array);
+            }
 				free(movie_string);
 				free(rtsp_format);
 				free(cseq);
@@ -245,15 +265,10 @@ void *serve_client(void *ptr) {
 				free(interleaved_string);
 				free(startpos_string);
 				
-			}
+			
 		}
 		else if(strncmp(control_string,"PLAY",4) == 0)
 		{
-			if(state_of_client != READY)
-			{
-				perror("Play can not be called in this state");
-				break;
-			}
 		
 			//get the video name now
 			char_length = get_word_size_double_array(parsed_data, 0, char_count, SPACE);
@@ -303,6 +318,52 @@ void *serve_client(void *ptr) {
 			set_word_double_array(parsed_data, scale_value, 2, char_count, char_length);
 			char_count += char_length + 1;
 			
+            if(state_of_client == PLAYING)
+			{
+                stop_timer(play_interval, play_timer);
+                state_of_client = READY;
+                
+                //for now, assume it's the standard successful scenario
+                char *return_array = (char *)malloc(400);
+                rdi.rtsp_format = rtsp_format;
+                rdi.cseq = cseq;
+                rdi.session = session_num;
+                rdi.return_code = SUCCESS;
+                rdi.return_msg = SUCCESS_MSG;
+                get_response(return_array, SETUP, rdi);
+                
+                if(send(client_fd, (void *)return_array, strlen(return_array), 0) < 0)
+                {
+                    perror("send");
+                }
+                
+                free(return_array);
+                
+				
+			}else if(state_of_client != READY)
+			{
+				perror("Play can not be called in this state");
+                char *return_array = (char *)malloc(400);
+                
+                rdi.rtsp_format = rtsp_format;
+				rdi.cseq = cseq;
+				rdi.session = get_session_num();
+                rdi.return_code = INVALID_STATE;
+				rdi.return_msg = INVALID_STATE_MSG;
+				get_response(return_array, SETUP, rdi);
+				
+				if(send(client_fd, (void *)return_array, strlen(return_array), 0) < 0)
+				{
+					perror("send");
+				}
+				
+				free(return_array);
+                
+				
+			}else{
+
+            
+            
 			//at this point, we have our char array, call video play now
 			//convert scale_value to int; 1 is default
 			int scale = atoi(scale_value);
@@ -315,7 +376,8 @@ void *serve_client(void *ptr) {
 			data.play_interval = play_interval;
 			data.play_timer = play_timer;
 			start_timer(play_interval, play_timer);
-			state_of_client = PLAYING;
+            state_of_client = PLAYING;
+            
             char *return_array = (char *)malloc(400);
 			rdi.rtsp_format = rtsp_format;
 			rdi.cseq = cseq;
@@ -325,14 +387,14 @@ void *serve_client(void *ptr) {
 			get_response(return_array, PLAY, rdi);
 			return_array = realloc(return_array, strlen(return_array));
 			
-			perror("Testing");
 			if(send(client_fd, (void *)return_array, strlen(return_array), 0) < 0)
 			{
 				perror("send");
 			}
-			perror("Success");
 			
 			free(return_array);
+            }
+            
 			free(movie_string);
 			free(rtsp_format);
 			free(cseq);
@@ -341,11 +403,6 @@ void *serve_client(void *ptr) {
 		}
 		else if(strncmp(control_string,"PAUSE",5) == 0)
 		{
-			if(state_of_client != PLAYING)
-			{
-				perror("Pause can not be called in this state");
-				break;
-			}
 			
 			//get the video name now
 			char_length = get_word_size_double_array(parsed_data, 0, char_count, SPACE);
@@ -384,6 +441,29 @@ void *serve_client(void *ptr) {
 			set_word_double_array(parsed_data, session_num, 2, char_count, char_length);
 			char_count += char_length + 1;
 
+            if(state_of_client != PLAYING)
+			{
+				perror("Pause can not be called in this state");
+                char *return_array = (char *)malloc(400);
+                
+                rdi.rtsp_format = rtsp_format;
+				rdi.cseq = cseq;
+				rdi.session = get_session_num();
+                rdi.return_code = INVALID_STATE;
+				rdi.return_msg = INVALID_STATE_MSG;
+				get_response(return_array, SETUP, rdi);
+				
+				if(send(client_fd, (void *)return_array, strlen(return_array), 0) < 0)
+				{
+					perror("send");
+				}
+				
+				free(return_array);
+                
+                
+			}
+            else{
+            
 			data.cseq = atoi(cseq);
 			//at this point, we have our char array, call video pause now
 			stop_timer(play_interval, play_timer);
@@ -403,6 +483,9 @@ void *serve_client(void *ptr) {
 				perror("send");
 			}
 			
+            free(return_array);
+            }
+            
 			free(movie_string);
 			free(rtsp_format);
 			free(cseq);
@@ -411,12 +494,6 @@ void *serve_client(void *ptr) {
 		}
 		else if(strncmp(control_string,"TEARDOWN",8) == 0)
 		{
-			if(state_of_client == INIT)
-			{
-				perror("Teardown can not be called in this state");
-				break;
-			}
-			
 			//get the video name now
 			char_length = get_word_size_double_array(parsed_data, 0, char_count, SPACE);
 			movie_string = (char *)malloc(char_length);
@@ -465,6 +542,27 @@ void *serve_client(void *ptr) {
 			set_word_double_array(parsed_data, scale_value, 2, char_count, char_length);
 			char_count += char_length + 1;
 			
+            if(state_of_client == INIT)
+			{
+				perror("Teardown can not be called in this state");
+				char *return_array = (char *)malloc(400);
+                
+                rdi.rtsp_format = rtsp_format;
+				rdi.cseq = cseq;
+				rdi.session = get_session_num();
+                rdi.return_code = INVALID_STATE;
+				rdi.return_msg = INVALID_STATE_MSG;
+				get_response(return_array, SETUP, rdi);
+				
+				if(send(client_fd, (void *)return_array, strlen(return_array), 0) < 0)
+				{
+					perror("send");
+				}
+				
+				free(return_array);
+			}else{
+
+            
 			//at this point, we have our char array, call video teardown now
 			stop_timer(play_interval, play_timer);
             state_of_client = INIT;
@@ -483,6 +581,8 @@ void *serve_client(void *ptr) {
 				perror("send");
 			}
 			
+            free(return_array);
+            }
 			free(movie_string);
 			free(rtsp_format);
 			free(cseq);
