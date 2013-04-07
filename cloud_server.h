@@ -37,6 +37,10 @@
 #define SUCCESS_MSG " OK"
 #define NOT_FOUND " 404"
 #define NOT_FOUND_MSG " Not Found"
+#define INVALID_STATE " 455"
+#define INVALID_STATE_MSG " Method Not Valid in This State"
+#define INTERNAL_SERVER_ERROR " 500"
+#define INTERNAL_SERVER_ERROR_MSG " Internal Server Error"
 
 /*
 #define typedef e_rtsp_requests { \
@@ -55,8 +59,20 @@ typedef struct send_frame_data {
   char *video_name;
   int frame_number;
   int cseq;
+  char *session;
+  char *rtsp_format;
   int done;
   struct itimerspec play_interval;
+  //under the assumption we only have 5 cloud servers
+  //note: i would have used a char **, but there were too many seg faults, and mem problems I didnt know how to fix, so I reverted to this format, which did work
+  //given more time, i would have used the char **, but under current constraints, i didnt bother
+  char *server1;
+  char *server2;
+  char *server3;
+  char *server4;
+  char *server5;
+  int *server_ports;
+  int *server_sockfds;
   timer_t play_timer;
 } send_frame_data;
 
@@ -77,10 +93,9 @@ void set_word_single_array(char *array, char *destination, int start_pos, int ch
 int get_word_size_double_array(char **array, int line, int start_pos, char delimiter);
 int get_word_size_single_array(char *array, int start_pos, char delimiter);
 char* get_session_num();
-//void create_timer(create_timer_data timer_data);
 void send_frame(union sigval sv_data);
 void start_timer(struct itimerspec play_interval, timer_t play_timer);
 void stop_timer(struct itimerspec play_interval, timer_t play_timer);
 CvMat* get_encoded(CvCapture *video, int scale);
-char* get_response(char *return_array, int state, response_data rdi);
+char* get_response(char *return_array, response_data rdi);
 int sendall(int s, char *buf, int len);
