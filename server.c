@@ -118,6 +118,7 @@ void *serve_client(void *ptr) {
 		
 		char *movie_string;
 		char *rtsp_format;
+        char *firstWord;
 		char *cseq;
 		char *session_num;
 		char *scale_value;
@@ -147,49 +148,66 @@ void *serve_client(void *ptr) {
 				set_word_double_array(parsed_data, rtsp_format, 0, char_count, char_length);
 				char_count += char_length + 1;
 				
-				//goto second line, get sequence number
-				
-				//reset count
-				char_count = 0;
-				//This is for CSeq: 
-				char_length = get_word_size_double_array(parsed_data, 1, char_count, SPACE);
-				char_count += char_length + 1;
-				//This is for the sequence number
-				char_length = get_word_size_double_array(parsed_data, 1, char_count, ENDOFARR);
-				cseq = (char *)malloc(char_length);
-				set_word_double_array(parsed_data, cseq, 1, char_count, char_length);
-				char_count += char_length + 1;
-				
-				//goto third line, get port number
-				
-				//reset count
-				char_count = 0;
-				//This is for the Transport:
-				char_length = get_word_size_double_array(parsed_data, 2, char_count, SPACE);
-				char_count += char_length + 1;
-				//This is for the RTP/UDP;
-				char_length = get_word_size_double_array(parsed_data, 2, char_count, SPACE);
-				transport_type = (char *)malloc(char_length);
-				set_word_double_array(parsed_data, transport_type, 2, char_count, char_length);
-				char_count += char_length + 1;
-				//This is for the interleaved=$a
-				char_length = get_word_size_double_array(parsed_data, 2, char_count, ENDOFARR);
-				interleaved_string = (char *)malloc(char_length);
-				set_word_double_array(parsed_data, interleaved_string, 2, char_count, char_length);
-				char_count += char_length + 1;
-				
-				//split the interleaved string into useable portions
-				
-				//reset count
-				char_count = 0;
-				//(for interleaved=a)
-				char_length = get_word_size_single_array(interleaved_string, char_count, '=');
-				char_count += char_length + 1;
-				//for a: check what the delimeter should be, space for now
-				char_length = get_word_size_single_array(interleaved_string, char_count, ENDOFARR);
-				startpos_string = (char *)malloc(char_length);
-				set_word_single_array(interleaved_string, startpos_string, char_count, char_length);
-				char_count += char_length + 1;
+				//Handle out of order headers
+            int i;
+            for(i=1;i<line_counter-1;i++){
+                //read the first word
+                char_count = 0;
+                char_length = get_word_size_double_array(parsed_data, i, char_count, SPACE);
+                firstWord = (char *)malloc(char_length);
+                set_word_double_array(parsed_data, firstWord, i, char_count, char_length);
+                char_count += char_length + 1;
+                
+                
+                
+                
+                if (strncmp(firstWord,"CSeq",4) == 0) {
+                    //reset count
+                    char_count = 0;
+                    //This is for CSeq:
+                    char_length = get_word_size_double_array(parsed_data, i, char_count, SPACE);
+                    char_count += char_length + 1;
+                    //This is for the sequence number
+                    char_length = get_word_size_double_array(parsed_data, i, char_count, ENDOFARR);
+                    cseq = (char *)malloc(char_length);
+                    set_word_double_array(parsed_data, cseq, i, char_count, char_length);
+                    char_count += char_length + 1;
+                }
+                else if(strncmp(firstWord,"Transport",9) == 0){
+                    //reset count
+                    char_count = 0;
+                    //This is for the Transport:
+                    char_length = get_word_size_double_array(parsed_data, i, char_count, SPACE);
+                    char_count += char_length + 1;
+                    //This is for the RTP/UDP;
+                    char_length = get_word_size_double_array(parsed_data, i, char_count, SPACE);
+                    transport_type = (char *)malloc(char_length);
+                    set_word_double_array(parsed_data, transport_type, i, char_count, char_length);
+                    char_count += char_length + 1;
+                    //This is for the interleaved=$a
+                    char_length = get_word_size_double_array(parsed_data, i, char_count, ENDOFARR);
+                    interleaved_string = (char *)malloc(char_length);
+                    set_word_double_array(parsed_data, interleaved_string, i, char_count, char_length);
+                    char_count += char_length + 1;
+                    
+                    //reset count
+                    char_count = 0;
+                    //(for interleaved=a)
+                    char_length = get_word_size_single_array(interleaved_string, char_count, '=');
+                    char_count += char_length + 1;
+                    //for a: check what the delimeter should be, space for now
+                    char_length = get_word_size_single_array(interleaved_string, char_count, ENDOFARR);
+                    startpos_string = (char *)malloc(char_length);
+                    set_word_single_array(interleaved_string, startpos_string, char_count, char_length);
+                    char_count += char_length + 1;
+
+                }
+            else{
+                    perror("Parameter not understood");
+                    exit(1);
+                }
+            }
+            
 				
             
             
@@ -269,8 +287,7 @@ void *serve_client(void *ptr) {
 		}
 		else if(strncmp(control_string,"PLAY",4) == 0)
 		{
-		
-			//get the video name now
+            //get the video name now
 			char_length = get_word_size_double_array(parsed_data, 0, char_count, SPACE);
 			movie_string = (char *)malloc(char_length);
 			set_word_double_array(parsed_data, movie_string, 0, char_count, char_length);
@@ -281,42 +298,63 @@ void *serve_client(void *ptr) {
 			set_word_double_array(parsed_data, rtsp_format, 0, char_count, char_length);
 			char_count += char_length + 1;
 			
-			//goto second line, get sequence number
+            
+            //Handle out of order headers
+            int i;
+            for(i=1;i<line_counter-1;i++){
+                //read the first word
+                char_count = 0;
+                char_length = get_word_size_double_array(parsed_data, i, char_count, SPACE);
+                firstWord = (char *)malloc(char_length);
+                set_word_double_array(parsed_data, firstWord, i, char_count, char_length);
+                char_count += char_length + 1;
+            
+                if (strncmp(firstWord,"CSeq",4) == 0) {
+                    //reset count
+                    char_count = 0;
+                    //This is for CSeq:
+                    char_length = get_word_size_double_array(parsed_data, i, char_count, SPACE);
+                    char_count += char_length + 1;
+                    //This is for the sequence number
+                    char_length = get_word_size_double_array(parsed_data, i, char_count, ENDOFARR);
+                    cseq = (char *)malloc(char_length);
+                    set_word_double_array(parsed_data, cseq, i, char_count, char_length);
+                    char_count += char_length + 1;//get the video name now
+
+                }else if (strncmp(firstWord,"Scale",5) == 0){
+                    
+                    //reset count
+                    char_count = 0;
+                    //This is for the Scale:
+                    char_length = get_word_size_double_array(parsed_data, i, char_count, SPACE);
+                    char_count += char_length + 1;
+                    //This is for the Scale value
+                    char_length = get_word_size_double_array(parsed_data, i, char_count, ENDOFARR);
+                    scale_value = (char *)malloc(char_length);
+                    set_word_double_array(parsed_data, scale_value, i, char_count, char_length);
+                    char_count += char_length + 1;
+                
+                
+                }
+                else if (strncmp(firstWord,"Session",7) == 0){
+                    //reset count
+                    char_count = 0;
+                    //This is for the Session:
+                    char_length = get_word_size_double_array(parsed_data, i, char_count, SPACE);
+                    char_count += char_length + 1;
+                    //This is for the session value
+                    char_length = get_word_size_double_array(parsed_data, i, char_count, ENDOFARR);
+                    session_num = (char *)malloc(char_length);
+                    set_word_double_array(parsed_data, session_num, i, char_count, char_length);
+                    char_count += char_length + 1;
+                }
+                
+                else{
+                    perror("Parameter not understood");
+                    exit(1);
+                }
+            }
 			
-			//reset count
-			char_count = 0;
-			//This is for CSeq: 
-			char_length = get_word_size_double_array(parsed_data, 1, char_count, SPACE);
-			char_count += char_length + 1;
-			//This is for the sequence number
-			char_length = get_word_size_double_array(parsed_data, 1, char_count, ENDOFARR);
-			cseq = (char *)malloc(char_length);
-			set_word_double_array(parsed_data, cseq, 1, char_count, char_length);
-			char_count += char_length + 1;//get the video name now
-			
-			//goto third line, get port number
-			
-			//reset count
-			char_count = 0;
-			//This is for the Session:
-			char_length = get_word_size_double_array(parsed_data, 2, char_count, SPACE);
-			char_count += char_length + 1;
-			//This is for the session value
-			char_length = get_word_size_double_array(parsed_data, 2, char_count, ENDOFARR);
-			session_num = (char *)malloc(char_length);
-			set_word_double_array(parsed_data, session_num, 2, char_count, char_length);
-			char_count += char_length + 1;
-			
-			//reset count
-			char_count = 0;
-			//This is for the Scale:
-			char_length = get_word_size_double_array(parsed_data, 2, char_count, SPACE);
-			char_count += char_length + 1;
-			//This is for the Scale value
-			char_length = get_word_size_double_array(parsed_data, 2, char_count, ENDOFARR);
-			scale_value = (char *)malloc(char_length);
-			set_word_double_array(parsed_data, scale_value, 2, char_count, char_length);
-			char_count += char_length + 1;
 			
             if(state_of_client == PLAYING)
 			{
@@ -390,6 +428,7 @@ void *serve_client(void *ptr) {
 			if(send(client_fd, (void *)return_array, strlen(return_array), 0) < 0)
 			{
 				perror("send");
+        
 			}
 			
 			free(return_array);
@@ -415,31 +454,48 @@ void *serve_client(void *ptr) {
 			set_word_double_array(parsed_data, rtsp_format, 0, char_count, char_length);
 			char_count += char_length + 1;
 			
-			//goto second line, get sequence number
 			
-			//reset count
-			char_count = 0;
-			//This is for CSeq: 
-			char_length = get_word_size_double_array(parsed_data, 1, char_count, SPACE);
-			char_count += char_length + 1;
-			//This is for the sequence number
-			char_length = get_word_size_double_array(parsed_data, 1, char_count, ENDOFARR);
-			cseq = (char *)malloc(char_length);
-			set_word_double_array(parsed_data, cseq, 1, char_count, char_length);
-			char_count += char_length + 1;//get the video name now
-			
-			//goto third line, get port number
-			
-			//reset count
-			char_count = 0;
-			//This is for the Session:
-			char_length = get_word_size_double_array(parsed_data, 2, char_count, SPACE);
-			char_count += char_length + 1;
-			//This is for the session value
-			char_length = get_word_size_double_array(parsed_data, 2, char_count, ENDOFARR);
-			session_num = (char *)malloc(char_length);
-			set_word_double_array(parsed_data, session_num, 2, char_count, char_length);
-			char_count += char_length + 1;
+            //Handle out of order headers
+            int i;
+            for(i=1;i<line_counter-1;i++){
+                //read the first word
+                char_count = 0;
+                char_length = get_word_size_double_array(parsed_data, i, char_count, SPACE);
+                firstWord = (char *)malloc(char_length);
+                set_word_double_array(parsed_data, firstWord, i, char_count, char_length);
+                char_count += char_length + 1;
+                
+                if (strncmp(firstWord,"CSeq",4) == 0) {
+                    //reset count
+                    char_count = 0;
+                    //This is for CSeq:
+                    char_length = get_word_size_double_array(parsed_data, i, char_count, SPACE);
+                    char_count += char_length + 1;
+                    //This is for the sequence number
+                    char_length = get_word_size_double_array(parsed_data, i, char_count, ENDOFARR);
+                    cseq = (char *)malloc(char_length);
+                    set_word_double_array(parsed_data, cseq, i, char_count, char_length);
+                    char_count += char_length + 1;//get the video name now
+                
+                }else if (strncmp(firstWord,"Session",7) == 0){
+                    //reset count
+                    char_count = 0;
+                    //This is for the Session:
+                    char_length = get_word_size_double_array(parsed_data, i, char_count, SPACE);
+                    char_count += char_length + 1;
+                    //This is for the session value
+                    char_length = get_word_size_double_array(parsed_data, i, char_count, ENDOFARR);
+                    session_num = (char *)malloc(char_length);
+                    set_word_double_array(parsed_data, session_num, i, char_count, char_length);
+                    char_count += char_length + 1;
+                    
+                    
+                }
+                else{
+                    perror("Parameter not understood");
+                    exit(1);
+                }
+            }
 
             if(state_of_client != PLAYING)
 			{
@@ -505,42 +561,61 @@ void *serve_client(void *ptr) {
 			set_word_double_array(parsed_data, rtsp_format, 0, char_count, char_length);
 			char_count += char_length + 1;
 			
-			//goto second line, get sequence number
-			
-			//reset count
-			char_count = 0;
-			//This is for CSeq: 
-			char_length = get_word_size_double_array(parsed_data, 1, char_count, SPACE);
-			char_count += char_length + 1;
-			//This is for the sequence number
-			char_length = get_word_size_double_array(parsed_data, 1, char_count, ENDOFARR);
-			cseq = (char *)malloc(char_length);
-			set_word_double_array(parsed_data, cseq, 1, char_count, char_length);
-			char_count += char_length + 1;//get the video name now
-			
-			//goto third line, get port number
-			
-			//reset count
-			char_count = 0;
-			//This is for the Session:
-			char_length = get_word_size_double_array(parsed_data, 2, char_count, SPACE);
-			char_count += char_length + 1;
-			//This is for the session value
-			char_length = get_word_size_double_array(parsed_data, 2, char_count, ENDOFARR);
-			session_num = (char *)malloc(char_length);
-			set_word_double_array(parsed_data, session_num, 2, char_count, char_length);
-			char_count += char_length + 1;
-			
-			//reset count
-			char_count = 0;
-			//This is for the Scale:
-			char_length = get_word_size_double_array(parsed_data, 2, char_count, SPACE);
-			char_count += char_length + 1;
-			//This is for the Scale value
-			char_length = get_word_size_double_array(parsed_data, 2, char_count, ENDOFARR);
-			scale_value = (char *)malloc(char_length);
-			set_word_double_array(parsed_data, scale_value, 2, char_count, char_length);
-			char_count += char_length + 1;
+            //Handle out of order headers
+            int i;
+            for(i=1;i<line_counter-1;i++){
+                //read the first word
+                char_count = 0;
+                char_length = get_word_size_double_array(parsed_data, i, char_count, SPACE);
+                firstWord = (char *)malloc(char_length);
+                set_word_double_array(parsed_data, firstWord, i, char_count, char_length);
+                char_count += char_length + 1;
+                
+                if (strncmp(firstWord,"CSeq",4) == 0) {
+                    //reset count
+                    char_count = 0;
+                    //This is for CSeq:
+                    char_length = get_word_size_double_array(parsed_data, i, char_count, SPACE);
+                    char_count += char_length + 1;
+                    //This is for the sequence number
+                    char_length = get_word_size_double_array(parsed_data, i, char_count, ENDOFARR);
+                    cseq = (char *)malloc(char_length);
+                    set_word_double_array(parsed_data, cseq, i, char_count, char_length);
+                    char_count += char_length + 1;//get the video name now
+                    
+                }else if (strncmp(firstWord,"Scale",5) == 0){
+                    //reset count
+                    char_count = 0;
+                    //This is for the Scale:
+                    char_length = get_word_size_double_array(parsed_data, i, char_count, SPACE);
+                    char_count += char_length + 1;
+                    //This is for the Scale value
+                    char_length = get_word_size_double_array(parsed_data, i, char_count, ENDOFARR);
+                    scale_value = (char *)malloc(char_length);
+                    set_word_double_array(parsed_data, scale_value, i, char_count, char_length);
+                    char_count += char_length + 1;
+                }
+                
+                    else if (strncmp(firstWord,"Session",7) == 0){
+                        //reset count
+                        char_count = 0;
+                        //This is for the Session:
+                        char_length = get_word_size_double_array(parsed_data, i, char_count, SPACE);
+                        char_count += char_length + 1;
+                        //This is for the session value
+                        char_length = get_word_size_double_array(parsed_data, i, char_count, ENDOFARR);
+                        session_num = (char *)malloc(char_length);
+                        set_word_double_array(parsed_data, session_num, i, char_count, char_length);
+                        char_count += char_length + 1;
+                        
+
+                }
+                else{
+                    perror("Parameter not understood");
+                    exit(1);
+                }
+            }
+
 			
             if(state_of_client == INIT)
 			{
